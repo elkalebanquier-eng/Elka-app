@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IA Locale</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-white">
+  <main class="max-w-2xl mx-auto p-4 h-screen flex flex-col">
+    <h1 class="text-2xl font-bold mb-2 text-center">IA Sans API</h1>
+    <p id="status" class="text-amber-400 text-center text-sm mb-4">
+      Modèle Llama-3.2-1B - 100% offline après chargement
+    </p>
+
+    <button
+      id="loadBtn"
+      class="bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-800 p-3 rounded-lg font-bold mb-4"
+    >
+      Charger l'IA - 1er lancement ~2min
+    </button>
+
+    <div id="chat" class="hidden flex-1 flex flex-col">
+      <div id="messages" class="flex-1 overflow-y-auto mb-4 space-y-3"></div>
+      <div class="flex gap-2">
+        <input
+          id="input"
+          type="text"
+          placeholder="Écris ici..."
+          class="flex-1 bg-zinc-900 p-3 rounded-lg border border-zinc-800 text-white"
+        />
+        <button id="sendBtn" class="bg-green-600 hover:bg-green-700 px-5 rounded-lg font-bold">
+          Envoyer
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
+    const statusEl = document.getElementById('status');
+    const loadBtn = document.getElementById('loadBtn');
+    const chatEl = document.getElementById('chat');
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+
+    let engine;
+    let history = [];
+    let isGenerating = false;
+
+    loadBtn.onclick = async () => {
+      loadBtn.disabled = true;
+
+      engine = await webllm.CreateMLCEngine(
+        "Llama-3.2-1B-Instruct-q4f16_1-MLC",
+        {
+          initProgressCallback: (report) => {
+            statusEl.textContent = report.text;
+          }
+        }
+      );
+
+      statusEl.textContent = 'IA prête! Tu peux discuter offline';
+      loadBtn.classList.add('hidden');
+      chatEl.classList.remove('hidden');
+      inputEl.focus();
+    };
+
+    sendBtn.onclick = sendMessage;
+    inputEl.onkeydown = e => {
+      if (e.key === 'Enter' &&!e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    };
+
+    async function sendMessage() {
+      if (isGenerating ||!inputEl.value.trim()) return;
+
+      const text = inputEl.value.trim();
+      inputEl.value = '';
+      isGenerating = true;
+      sendBtn.disabled = true;
+
+      history.push({ role: 'user', content: text });
+      history.push({ role: 'assistant', content: '' });
+      render();
+
+      const stream = await engine.chat.completions.create({
+        messages: [
+          {role: "system", content: "Tu es un assistant francophone, utile et concis."},
+         ...history.slice(0, -1)
+        ],
+        stream: true,
+        temperature: 0.7,
+      });
+
+      for await (const chunk of stream) {
+        history[history.length - 1].content += chunk.choices[0]?.delta.content || '';
+        render();
+      }
+
+      isGenerating = false;
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+
+    function render() {
+      messagesEl.innerHTML = history.map(msg => `
+        <div class="p-3 rounded-lg ${msg.role === 'user'
+        ? 'bg-blue-600 ml-auto max-w-[85%]'
+          : 'bg-zinc-800 mr-auto max-w-[85%]'}">
+          <p class="whitespace-pre-wrap text-sm">${msg.content}</p>
+        </div>
+      `).join('');
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  </script>
+</body>
+</html>
