@@ -6,391 +6,94 @@
   <title>ELKA👑 - IA Gratuite</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #000;
-      color: #fff;
-      height: 100vh;
-      overflow: hidden;
-    }
-.app { display: flex; height: 100vh; }
-.sidebar {
-      width: 280px;
-      background: #121212;
-      border-right: 1px solid #2a2a2a;
-      display: flex;
-      flex-direction: column;
-      transition: 0.3s;
-    }
-.sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid #2a2a2a;
-    }
-.logo {
-      font-size: 26px;
-      font-weight: 700;
-      background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: bounce 2s infinite;
-    }
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-.profile-section {
-      padding: 15px;
-      border-bottom: 1px solid #2a2a2a;
-    }
-.current-profile {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-.current-profile:hover { background: #252525; }
-.profile-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
-.profile-info { flex: 1; min-width: 0; }
-.profile-name { font-weight: 600; font-size: 14px; }
-.profile-plan { font-size: 11px; color: #888; }
-.profile-menu {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 12px;
-      margin-top: 8px;
-      overflow: hidden;
-      display: none;
-    }
-.profile-menu.active { display: block; }
-.profile-item {
-      padding: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-.profile-item:hover { background: #252525; }
-.profile-item.active { background: #2a2a2a; }
-.add-profile {
-      padding: 12px;
-      text-align: center;
-      color: #888;
-      cursor: pointer;
-      border-top: 1px solid #2a2a2a;
-      font-size: 14px;
-    }
-.add-profile:hover { background: #252525; color: #fff; }
-.new-chat {
-      margin: 15px;
-      padding: 2px;
-      background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
-      border-radius: 12px;
-      cursor: pointer;
-    }
-.new-chat-inner {
-      background: #121212;
-      padding: 12px 16px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 500;
-    }
-.history-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
-    }
-.history-item {
-      padding: 10px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      color: #aaa;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 4px;
-    }
-.history-item:hover { background: #1a1a1a; color: #fff; }
-.sidebar-footer {
-      padding: 15px;
-      border-top: 1px solid #2a2a2a;
-    }
-.quota-box {
-      background: linear-gradient(135deg, rgba(131,58,180,0.2), rgba(253,29,29,0.2));
-      border: 1px solid rgba(131,58,180,0.3);
-      border-radius: 12px;
-      padding: 12px;
-      font-size: 12px;
-    }
-.quota-bar {
-      background: #2a2a2a;
-      height: 4px;
-      border-radius: 2px;
-      margin-top: 8px;
-      overflow: hidden;
-    }
-.quota-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #833ab4, #fd1d1d);
-      transition: 0.3s;
-    }
-.chat-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #000;
-    }
-.mobile-header {
-      display: none;
-      padding: 15px;
-      background: #121212;
-      border-bottom: 1px solid #2a2a2a;
-      align-items: center;
-      justify-content: space-between;
-    }
-.menu-btn {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 24px;
-      cursor: pointer;
-    }
-.ad-banner {
-      background: #1a1a1a;
-      border: 1px dashed #444;
-      padding: 8px;
-      text-align: center;
-      font-size: 11px;
-      color: #666;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-.messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-.msg {
-      margin-bottom: 20px;
-      display: flex;
-      gap: 12px;
-    }
-.avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 14px;
-    }
-.avatar.user { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
-.avatar.ai { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); }
-.msg-content { flex: 1; }
-.msg-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-.msg-text { line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; }
-.input-area {
-      padding: 16px;
-      background: #121212;
-      border-top: 1px solid #2a2a2a;
-    }
-.limit-warning {
-      background: rgba(255,193,7,0.1);
-      border: 1px solid rgba(255,193,7,0.3);
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      font-size: 13px;
-      text-align: center;
-    }
-.input-box {
-      background: #1a1a1a;
-      border: 2px solid transparent;
-      border-radius: 16px;
-      padding: 3px;
-      background-image: linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
-      background-origin: border-box;
-      background-clip: padding-box, border-box;
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    #input {
-      flex: 1;
-      background: none;
-      border: none;
-      color: #fff;
-      padding: 14px;
-      font-size: 15px;
-      outline: none;
-      resize: none;
-      font-family: inherit;
-    }
-    #sendBtn {
-      background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045);
-      border: none;
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      cursor: pointer;
-      margin: 4px;
-      flex-shrink: 0;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #000; color: #fff; height: 100vh; overflow: hidden; }
+  .app { display: flex; height: 100vh; }
+  .sidebar { width: 280px; background: #121212; border-right: 1px solid #2a2a2a; display: flex; flex-direction: column; transition: 0.3s; }
+  .sidebar-header { padding: 20px; border-bottom: 1px solid #2a2a2a; }
+  .logo { font-size: 26px; font-weight: 700; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .profile-section { padding: 15px; border-bottom: 1px solid #2a2a2a; }
+  .current-profile { background: #1a1a1a; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .profile-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+  .profile-info { flex: 1; }
+  .profile-name { font-weight: 600; font-size: 14px; }
+  .profile-plan { font-size: 11px; color: #888; }
+  .profile-menu { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; margin-top: 8px; overflow: hidden; display: none; }
+  .profile-menu.active { display: block; }
+  .profile-item { padding: 12px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .profile-item:hover { background: #252525; }
+  .add-profile { padding: 12px; text-align: center; color: #888; cursor: pointer; border-top: 1px solid #2a2a2a; font-size: 14px; }
+  .new-chat { margin: 15px; padding: 2px; background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); border-radius: 12px; cursor: pointer; }
+  .new-chat-inner { background: #121212; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: 500; }
+  .history-list { flex: 1; overflow-y: auto; padding: 10px; }
+  .history-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+  .history-item:hover { background: #1a1a1a; color: #fff; }
+  .sidebar-footer { padding: 15px; border-top: 1px solid #2a2a2a; }
+  .quota-box { background: linear-gradient(135deg, rgba(131,58,180,0.2), rgba(253,29,29,0.2)); border: 1px solid rgba(131,58,180,0.3); border-radius: 12px; padding: 12px; font-size: 12px; }
+  .quota-bar { background: #2a2a2a; height: 4px; border-radius: 2px; margin-top: 8px; overflow: hidden; }
+  .quota-fill { height: 100%; background: linear-gradient(90deg, #833ab4, #fd1d1d); transition: 0.3s; }
+  .chat-area { flex: 1; display: flex; flex-direction: column; background: #000; }
+  .mobile-header { display: none; padding: 15px; background: #121212; border-bottom: 1px solid #2a2a2a; align-items: center; justify-content: space-between; }
+  .menu-btn { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+  .messages { flex: 1; overflow-y: auto; padding: 16px; }
+  .msg { margin-bottom: 20px; display: flex; gap: 12px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+  .avatar.user { background: linear-gradient(135deg, #3b82f6, #8b5cf6); }
+  .avatar.ai { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); }
+  .msg-content { flex: 1; }
+  .msg-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .msg-text { line-height: 1.6; word-wrap: break-word; white-space: pre-wrap; }
+  .input-area { padding: 16px; background: #121212; border-top: 1px solid #2a2a2a; }
+  .limit-warning { background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 13px; text-align: center; }
+  .input-box { background: #1a1a1a; border: 2px solid transparent; border-radius: 16px; padding: 3px; background-image: linear-gradient(#1a1a1a, #1a1a1a), linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); background-origin: border-box; background-clip: padding-box, border-box; display: flex; align-items: flex-end; gap: 8px; }
+    #input { flex: 1; background: none; border: none; color: #fff; padding: 14px; font-size: 15px; outline: none; resize: none; font-family: inherit; }
+    #sendBtn { background: linear-gradient(45deg, #833ab4, #fd1d1d, #fcb045); border: none; width: 44px; height: 44px; border-radius: 12px; cursor: pointer; margin: 4px; flex-shrink: 0; }
     #sendBtn:disabled { opacity: 0.5; }
-.modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-.modal.active { display: flex; }
-.modal-content {
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 400px;
-      width: 90%;
-    }
-.modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
-.modal-input {
-      width: 100%;
-      background: #0a0a0a;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      padding: 12px;
-      color: #fff;
-      font-size: 15px;
-      margin-bottom: 12px;
-    }
-.color-picker {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-.color-option {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-    }
-.color-option.active { border-color: #fff; }
-.modal-btns { display: flex; gap: 8px; }
-.modal-btn {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-.modal-btn.primary { background: linear-gradient(45deg, #833ab4, #fd1d1d); color: #fff; }
-.modal-btn.secondary { background: #2a2a2a; color: #fff; }
-    @media (max-width: 768px) {
-  .sidebar {
-        position: fixed;
-        left: -280px;
-        z-index: 100;
-        height: 100vh;
-      }
-  .sidebar.active { left: 0; }
-  .mobile-header { display: flex; }
-    }
+  .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .modal.active { display: flex; }
+  .modal-content { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 24px; max-width: 400px; width: 90%; }
+  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; }
+  .modal-input { width: 100%; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 12px; color: #fff; font-size: 15px; margin-bottom: 12px; }
+  .color-picker { display: flex; gap: 8px; margin-bottom: 16px; }
+  .color-option { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .color-option.active { border-color: #fff; }
+  .modal-btns { display: flex; gap: 8px; }
+  .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  .modal-btn.primary { background: linear-gradient(45deg, #833ab4, #fd1d1d); color: #fff; }
+  .modal-btn.secondary { background: #2a2a2a; color: #fff; }
+    @media (max-width: 768px) {.sidebar { position: fixed; left: -280px; z-index: 100; height: 100vh; }.sidebar.active { left: 0; }.mobile-header { display: flex; } }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">ELKA👑</div>
-      </div>
-
+      <div class="sidebar-header"><div class="logo">ELKA👑</div></div>
       <div class="profile-section">
         <div class="current-profile" onclick="toggleProfileMenu()">
           <div class="profile-avatar" id="currentAvatar"></div>
-          <div class="profile-info">
-            <div class="profile-name" id="currentName">Invité</div>
-            <div class="profile-plan" id="currentPlan">Gratuit • 20 msgs/jour</div>
-          </div>
+          <div class="profile-info"><div class="profile-name" id="currentName">Invité</div><div class="profile-plan">Gratuit • 20 msgs/jour</div></div>
+        </div>
         <div class="profile-menu" id="profileMenu"></div>
       </div>
-
-      <div class="new-chat" onclick="newChat()">
-        <div class="new-chat-inner">
-          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Nouveau Chat</span>
-        </div>
-      </div>
-
+      <div class="new-chat" onclick="newChat()"><div class="new-chat-inner"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span>Nouveau Chat</span></div></div>
       <div class="history-list" id="historyList"></div>
-
       <div class="sidebar-footer">
         <div class="quota-box">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>Messages aujourd'hui</span>
-            <span id="quotaText">0/20</span>
-          </div>
-          <div class="quota-bar">
-            <div class="quota-fill" id="quotaFill" style="width: 0%"></div>
-          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;"><span>Messages aujourd'hui</span><span id="quotaText">0/20</span></div>
+          <div class="quota-bar"><div class="quota-fill" id="quotaFill" style="width: 0%"></div></div>
         </div>
       </div>
     </div>
-
     <div class="chat-area">
-      <div class="mobile-header">
-        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-        <div class="logo" style="font-size: 20px;">ELKA👑</div>
-        <div style="width: 24px;"></div>
-      </div>
-
-      <div class="ad-banner" id="adTop">
-        <!-- Ton code AdSense ici après approbation -->
-        Publicité
-      </div>
-
+      <div class="mobile-header"><button class="menu-btn" onclick="toggleSidebar()">☰</button><div class="logo" style="font-size: 20px;">ELKA👑</div><div style="width: 24px;"></div></div>
       <div class="messages" id="messages"></div>
-
       <div class="input-area">
         <div id="limitWarning" style="display: none;"></div>
         <div class="input-box">
           <textarea id="input" placeholder="Message ELKA👑..." rows="1"></textarea>
-          <button id="sendBtn" onclick="sendMessage()">
-            <svg width="20" height="20" fill="none" stroke="white" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-4 20-7z"/></svg>
-          </button>
+          <button id="sendBtn" onclick="sendMessage()"><svg width="20" height="20" fill="none" stroke="white" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-4 20-7z"/></svg></button>
         </div>
       </div>
     </div>
-  </div>
-
   <div class="modal" id="profileModal">
     <div class="modal-content">
       <div class="modal-title">Nouveau Profil</div>
@@ -403,33 +106,25 @@
       </div>
     </div>
   </div>
-
   <script>
-    // CONFIG - REMPLACE PAR TA CLÉ GROQ
+    // ⚠️ POUR TEST LOCAL UNIQUEMENT - NE PAS METTRE EN LIGNE AVEC LA CLÉ
     const GROQ_API_KEY = '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';
     const MODEL = 'llama-3.3-70b-versatile';
-    const PROXY_URL = 'https://api.codetabs.com/v1/proxy?quest=';
-    const API_URL = PROXY_URL + encodeURIComponent('https://api.groq.com/openai/v1/chat/completions');
     const DAILY_LIMIT = 20;
     const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#6366f1','#14b8a6'];
-
     let profiles = JSON.parse(localStorage.getItem('elka_profiles') || '[]');
     let currentProfileId = localStorage.getItem('elka_current_profile') || null;
     let conversations = JSON.parse(localStorage.getItem('elka_conversations') || '{}');
     let currentConvId = null;
     let isLoading = false;
-
     const messagesDiv = document.getElementById('messages');
     const input = document.getElementById('input');
     const sendBtn = document.getElementById('sendBtn');
     const sidebar = document.getElementById('sidebar');
-
-    // Init
     if (profiles.length === 0) createDefaultProfile();
     else loadProfile(currentProfileId || profiles[0].id);
     renderProfiles();
     updateQuota();
-
     const colorPicker = document.getElementById('colorPicker');
     let selectedColor = COLORS[0];
     COLORS.forEach(color => {
@@ -444,42 +139,30 @@
       if (color === selectedColor) div.classList.add('active');
       colorPicker.appendChild(div);
     });
-
     input.addEventListener('input', function() {
       this.style.height = 'auto';
       this.style.height = Math.min(this.scrollHeight, 120) + 'px';
     });
-
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' &&!e.shiftKey) {
         e.preventDefault();
         sendMessage();
       }
     });
-
     function createDefaultProfile() {
-      const profile = {
-        id: 'default',
-        name: 'Invité',
-        color: COLORS[0],
-        created: Date.now(),
-        usage: { date: new Date().toDateString(), count: 0 }
-      };
+      const profile = { id: 'default', name: 'Invité', color: COLORS[0], created: Date.now(), usage: { date: new Date().toDateString(), count: 0 } };
       profiles = [profile];
       currentProfileId = 'default';
       saveProfiles();
       loadProfile('default');
     }
-
     function saveProfiles() {
       localStorage.setItem('elka_profiles', JSON.stringify(profiles));
       localStorage.setItem('elka_current_profile', currentProfileId);
     }
-
     function saveConversations() {
       localStorage.setItem('elka_conversations', JSON.stringify(conversations));
     }
-
     function getTodayCount() {
       const today = new Date().toDateString();
       const profile = profiles.find(p => p.id === currentProfileId);
@@ -489,26 +172,19 @@
       }
       return profile.usage.count;
     }
-
     function incrementUsage() {
       const profile = profiles.find(p => p.id === currentProfileId);
       profile.usage.count++;
       saveProfiles();
       updateQuota();
     }
-
     function updateQuota() {
       const count = getTodayCount();
       const percent = (count / DAILY_LIMIT) * 100;
       document.getElementById('quotaText').textContent = `${count}/${DAILY_LIMIT}`;
       document.getElementById('quotaFill').style.width = percent + '%';
-
       if (count >= DAILY_LIMIT) {
-        document.getElementById('limitWarning').innerHTML = `
-          <div class="limit-warning">
-            ⚠️ Limite atteinte! Reviens demain ou passe Premium pour illimité.
-          </div>
-        `;
+        document.getElementById('limitWarning').innerHTML = `<div class="limit-warning">⚠️ Limite atteinte! Reviens demain.</div>`;
         document.getElementById('limitWarning').style.display = 'block';
         input.disabled = true;
         sendBtn.disabled = true;
@@ -518,7 +194,6 @@
         sendBtn.disabled = false;
       }
     }
-
     function loadProfile(id) {
       currentProfileId = id;
       const profile = profiles.find(p => p.id === id);
@@ -531,57 +206,29 @@
       renderProfiles();
       document.getElementById('profileMenu').classList.remove('active');
     }
-
     function renderProfiles() {
       const menu = document.getElementById('profileMenu');
       menu.innerHTML = profiles.map(p => `
         <div class="profile-item ${p.id === currentProfileId? 'active' : ''}" onclick="loadProfile('${p.id}')">
           <div class="profile-avatar" style="background: ${p.color}">${p.name[0].toUpperCase()}</div>
-          <div class="profile-info">
-            <div class="profile-name">${p.name}</div>
-          </div>
+          <div class="profile-info"><div class="profile-name">${p.name}</div></div>
         </div>
-      `).join('') + `
-        <div class="add-profile" onclick="openModal()">+ Ajouter un profil</div>
-      `;
+      `).join('') + `<div class="add-profile" onclick="openModal()">+ Ajouter un profil</div>`;
     }
-
-    function toggleProfileMenu() {
-      document.getElementById('profileMenu').classList.toggle('active');
-    }
-
-    function toggleSidebar() {
-      sidebar.classList.toggle('active');
-    }
-
-    function openModal() {
-      document.getElementById('profileModal').classList.add('active');
-      document.getElementById('profileNameInput').value = '';
-    }
-
-    function closeModal() {
-      document.getElementById('profileModal').classList.remove('active');
-    }
-
+    function toggleProfileMenu() { document.getElementById('profileMenu').classList.toggle('active'); }
+    function toggleSidebar() { sidebar.classList.toggle('active'); }
+    function openModal() { document.getElementById('profileModal').classList.add('active'); document.getElementById('profileNameInput').value = ''; }
+    function closeModal() { document.getElementById('profileModal').classList.remove('active'); }
     function createProfile() {
       const name = document.getElementById('profileNameInput').value.trim();
       if (!name) return;
-
-      const profile = {
-        id: 'p' + Date.now(),
-        name,
-        color: selectedColor,
-        created: Date.now(),
-        usage: { date: new Date().toDateString(), count: 0 }
-      };
-
+      const profile = { id: 'p' + Date.now(), name, color: selectedColor, created: Date.now(), usage: { date: new Date().toDateString(), count: 0 } };
       profiles.push(profile);
       saveProfiles();
       loadProfile(profile.id);
       closeModal();
       renderProfiles();
     }
-
     function newChat() {
       currentConvId = 'c' + Date.now();
       if (!conversations[currentProfileId]) conversations[currentProfileId] = [];
@@ -590,7 +237,6 @@
       renderMessages();
       renderHistory();
     }
-
     function loadConversation() {
       if (!conversations[currentProfileId] || conversations[currentProfileId].length === 0) {
         newChat();
@@ -600,27 +246,15 @@
         renderHistory();
       }
     }
-
     function renderMessages() {
       const conv = conversations[currentProfileId]?.find(c => c.id === currentConvId);
       messagesDiv.innerHTML = '';
-
       if (!conv || conv.messages.length === 0) {
-        messagesDiv.innerHTML = `
-          <div style="text-align: center; padding: 40px 20px;">
-            <div style="font-size: 48px; margin-bottom: 16px;">👑</div>
-            <h2 style="font-size: 24px; margin-bottom: 8px;">Salut ${profiles.find(p => p.id === currentProfileId).name}!</h2>
-            <p style="color: #888;">Pose-moi ta question</p>
-          </div>
-        `;
+        messagesDiv.innerHTML = `<div style="text-align: center; padding: 40px 20px;"><div style="font-size: 48px; margin-bottom: 16px;">👑</div><h2 style="font-size: 24px; margin-bottom: 8px;">Salut ${profiles.find(p => p.id === currentProfileId).name}!</h2><p style="color: #888;">Pose-moi ta question</p></div>`;
         return;
       }
-
-      conv.messages.forEach(msg => {
-        addMessage(msg.role, msg.content);
-      });
+      conv.messages.forEach(msg => addMessage(msg.role, msg.content));
     }
-
     function renderHistory() {
       const list = document.getElementById('historyList');
       const convs = conversations[currentProfileId] || [];
@@ -629,72 +263,39 @@
         return `<div class="history-item" onclick="loadConv('${c.id}')">${preview}...</div>`;
       }).join('');
     }
-
-    function loadConv(id) {
-      currentConvId = id;
-      renderMessages();
-      sidebar.classList.remove('active');
-    }
-
+    function loadConv(id) { currentConvId = id; renderMessages(); sidebar.classList.remove('active'); }
     function addMessage(role, content) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'msg';
-      msgDiv.innerHTML = `
-        <div class="avatar ${role}">${role === 'user'? profiles.find(p => p.id === currentProfileId).name[0].toUpperCase() : '👑'}</div>
-        <div class="msg-content">
-          <div class="msg-name">${role === 'user'? profiles.find(p => p.id === currentProfileId).name : 'ELKA👑'}</div>
-          <div class="msg-text">${content}</div>
-        </div>
-      `;
+      msgDiv.innerHTML = `<div class="avatar ${role}">${role === 'user'? profiles.find(p => p.id === currentProfileId).name[0].toUpperCase() : '👑'}</div><div class="msg-content"><div class="msg-name">${role === 'user'? profiles.find(p => p.id === currentProfileId).name : 'ELKA👑'}</div><div class="msg-text">${content}</div></div>`;
       messagesDiv.appendChild(msgDiv);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
-
     async function sendMessage() {
       const text = input.value.trim();
       if (!text || isLoading) return;
       if (getTodayCount() >= DAILY_LIMIT) return;
-
       const conv = conversations[currentProfileId].find(c => c.id === currentConvId);
       conv.messages.push({role: 'user', content: text});
-
       addMessage('user', text);
       input.value = '';
       input.style.height = 'auto';
       isLoading = true;
       sendBtn.disabled = true;
-
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${GROQ_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: MODEL,
-            messages: [
-              {role: 'system', content: 'Tu es ELKA👑, IA stylée qui répond en français avec des émojis.'},
-         ...conv.messages
-            ],
-            temperature: 0.7,
-            max_tokens: 1000,
-          }),
+          headers: { 'Authorization': `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: MODEL, messages: [ {role: 'system', content: 'Tu es ELKA👑, IA stylée qui répond en français avec des émojis.'},...conv.messages ], temperature: 0.7, max_tokens: 1000 }),
         });
-
         const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error?.message || 'Erreur API Groq');
-        }
-
+        if (!response.ok) throw new Error(data.error?.message || 'Erreur API');
         const reply = data.choices[0].message.content;
         conv.messages.push({role: 'assistant', content: reply});
         addMessage('assistant', reply);
         saveConversations();
         incrementUsage();
         renderHistory();
-
       } catch (error) {
         addMessage('assistant', '❌ ' + error.message);
       } finally {
