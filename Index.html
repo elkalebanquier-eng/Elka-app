@@ -1,641 +1,778 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Aesmarket – Assistant IA</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>PAROLE — Ta photo prend la parole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141110;
+  --surface:#1D1814;
+  --surface2:#241E18;
+  --ink:#F4EEE3;
+  --muted:#9A8F7E;
+  --amber:#E3A33D;
+  --clay:#C1512F;
+  --line:rgba(244,238,227,0.09);
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Work Sans',sans-serif;
+  overscroll-behavior:none;
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;flex-direction:column;
+}
+h1,h2,.disp{font-family:'Fraunces',serif;}
+button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer;}
+input,textarea{font-family:inherit;}
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+/* ─── Header ─── */
+.topbar{
+  padding:22px 20px 14px;display:flex;align-items:baseline;gap:10px;
+  border-bottom:1px solid var(--line);
+}
+.topbar .disp{font-size:22px;font-weight:700;letter-spacing:0.5px;}
+.topbar .tag{font-size:11.5px;color:var(--muted);}
 
-    :root {
-      --bg-start: #e8ecf1;
-      --bg-end: #d0d7e2;
-      --glass: rgba(255,255,255,0.75);
-      --glass-border: rgba(255,255,255,0.5);
-      --user-msg: #0071e3;
-      --assistant-msg: #ffffff;
-      --assistant-text: #1d1d1f;
-      --input-bg: #ffffff;
-      --input-border: #c7c7cc;
-      --text: #1d1d1f;
-      --badge-bg: #e8e8ed;
-      --badge-color: #0071e3;
-      --send-bg: #0071e3;
-      --shadow: 0 20px 40px rgba(0,0,0,0.08);
-    }
+.screen{display:none;flex:1;flex-direction:column;min-height:0;}
+.screen.active{display:flex;}
 
-    .dark {
-      --bg-start: #1c1c1e;
-      --bg-end: #2c2c2e;
-      --glass: rgba(44,44,46,0.8);
-      --glass-border: rgba(255,255,255,0.08);
-      --user-msg: #0a84ff;
-      --assistant-msg: #2c2c2e;
-      --assistant-text: #f5f5f7;
-      --input-bg: #3a3a3c;
-      --input-border: #48484a;
-      --text: #f5f5f7;
-      --badge-bg: #3a3a3c;
-      --badge-color: #0a84ff;
-      --send-bg: #0a84ff;
-    }
+/* ─── Upload / edit screen ─── */
+#screenEdit{padding:20px;gap:18px;overflow-y:auto;padding-bottom:110px;}
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: linear-gradient(160deg, var(--bg-start) 0%, var(--bg-end) 100%);
-      min-height: 100vh; display: flex; justify-content: center; align-items: center;
-      padding: 16px; margin: 0; transition: background 0.5s;
-    }
+.dropzone{
+  position:relative;width:100%;aspect-ratio:4/5;border-radius:var(--r);
+  background:var(--surface);border:1.5px dashed rgba(244,238,227,0.18);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  overflow:hidden;color:var(--muted);text-align:center;
+}
+.dropzone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.dropzone .dz-icon{font-size:34px;}
+.dropzone .dz-label{font-size:13px;font-weight:600;color:var(--ink);}
+.dropzone .dz-sub{font-size:11.5px;color:var(--muted);}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.dz-change{
+  position:absolute;top:10px;right:10px;background:rgba(20,17,16,0.7);
+  backdrop-filter:blur(6px);border:1px solid rgba(244,238,227,0.2);
+  border-radius:20px;padding:6px 13px;font-size:11.5px;font-weight:600;
+  color:#fff;z-index:2;pointer-events:none;
+}
 
-    .app-container {
-      width: 100%; max-width: 780px; height: 92vh;
-      background: var(--glass); backdrop-filter: blur(30px);
-      border-radius: 36px; box-shadow: var(--shadow);
-      display: flex; flex-direction: column; overflow: hidden;
-      border: 1px solid var(--glass-border); transition: background 0.3s;
-    }
+.field-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block;}
 
-    /* Header amélioré */
-    .chat-header {
-      padding: 16px 24px; background: linear-gradient(135deg, rgba(0,113,227,0.2), rgba(0,113,227,0.05));
-      backdrop-filter: blur(25px); border-bottom: 1px solid var(--glass-border);
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px;
-    }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .avatar-wrapper {
-      width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #0071e3, #40a9ff);
-      display: flex; align-items: center; justify-content: center;
-      overflow: hidden; cursor: pointer; flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(0,113,227,0.3);
-    }
-    .avatar-wrapper svg { width: 24px; height: 24px; fill: white; }
-    .avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-    .header-info { display: flex; flex-direction: column; }
-    .header-info h2 {
-      font-weight: 600; font-size: 1.2rem; color: var(--text);
-      letter-spacing: -0.2px; background: linear-gradient(135deg, #0071e3, #40a9ff);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .header-info span { font-size: 0.75rem; color: var(--text); opacity: 0.7; font-weight: 500; }
-    .header-actions { display: flex; gap: 8px; }
+textarea#txtInput{
+  width:100%;min-height:104px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);
+  color:var(--ink);padding:14px;font-size:15.5px;line-height:1.55;
+  resize:none;outline:none;
+}
+textarea#txtInput:focus{border-color:rgba(227,163,61,0.5);}
+.char-row{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--muted);}
 
-    .icon-btn {
-      background: var(--glass); border: 1px solid var(--glass-border);
-      border-radius: 100px; padding: 8px 14px; cursor: pointer; font-size: 0.8rem;
-      color: var(--text); display: flex; align-items: center; gap: 4px;
-      transition: all 0.2s; white-space: nowrap; backdrop-filter: blur(10px);
-    }
-    .icon-btn:hover { background: rgba(255,255,255,0.7); }
-    .icon-btn.active { background: var(--send-bg); color: white; border-color: var(--send-bg); }
+.voice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.voice-group-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:12px 0 6px;grid-column:1 / -1;}
+.voice-pill{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:11px 8px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.voice-pill .vp-name{font-size:12.5px;font-weight:700;}
+.voice-pill .vp-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+.voice-pill.active{border-color:var(--amber);background:rgba(227,163,61,0.1);}
+.voice-pill.active .vp-name{color:var(--amber);}
 
-    /* Chat */
-    .chat-box {
-      flex: 1; overflow-y: auto; padding: 20px 24px;
-      display: flex; flex-direction: column; gap: 16px;
-    }
-    .message {
-      max-width: 80%; display: flex; gap: 10px; align-items: flex-end;
-      animation: fadeInUp 0.3s ease;
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .message.user { align-self: flex-end; flex-direction: row-reverse; }
-    .message-avatar {
-      width: 30px; height: 30px; border-radius: 50%; background: var(--badge-bg);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.9rem; flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    .message-avatar svg { width: 16px; height: 16px; fill: var(--badge-color); }
-    .message-bubble {
-      padding: 12px 16px; border-radius: 22px; line-height: 1.45;
-      font-size: 0.9rem; word-break: break-word; white-space: pre-wrap;
-      position: relative;
-    }
-    .message.user .message-bubble { background: var(--user-msg); color: white; border-bottom-right-radius: 6px; }
-    .message.assistant .message-bubble { background: var(--assistant-msg); color: var(--assistant-text); border-bottom-left-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-    .speak-btn {
-      background: none; border: none; cursor: pointer; font-size: 0.9rem;
-      opacity: 0.4; margin-left: 4px; transition: opacity 0.2s;
-    }
-    .speak-btn:hover { opacity: 0.8; }
+.music-upload{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:13px 14px;font-size:13px;font-weight:600;color:var(--ink);
+}
+.music-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.music-clear{
+  font-size:11px;font-weight:700;color:var(--muted);text-decoration:underline;
+  position:relative;z-index:2;pointer-events:auto;
+}
 
-    /* Input */
-    .chat-input-area {
-      padding: 12px 20px 20px; display: flex; gap: 10px; align-items: center;
-      background: rgba(255,255,255,0.5); backdrop-filter: blur(20px);
-      border-top: 1px solid var(--glass-border);
-    }
-    #userInput {
-      flex: 1; padding: 14px 18px; border-radius: 100px;
-      border: 1px solid var(--input-border); background: var(--input-bg);
-      font-size: 0.9rem; outline: none; color: var(--text);
-      transition: border 0.2s, box-shadow 0.2s;
-    }
-    #userInput:focus { border-color: var(--send-bg); box-shadow: 0 0 0 3px rgba(0,113,227,0.15); }
-    .input-action {
-      width: 42px; height: 42px; border-radius: 50%; border: none;
-      background: var(--glass); color: var(--text); font-size: 1.2rem;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: background 0.2s; flex-shrink: 0;
-    }
-    .input-action:hover { background: rgba(255,255,255,0.8); }
-    #sendBtn { background: var(--send-bg); color: white; }
-    #sendBtn:disabled { background: #a0c4ff; }
-    .mic-btn.recording { background: #ff3b30; color: white; }
+.generate-btn{
+  width:100%;padding:16px;border-radius:30px;
+  background:linear-gradient(135deg,var(--amber),var(--clay));
+  color:#1A1310;font-weight:700;font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 8px 24px rgba(227,163,61,0.25);
+}
+.generate-btn:disabled{opacity:0.4;box-shadow:none;}
+.generate-btn:active{transform:scale(0.98);}
 
-    /* Dashboard */
-    .dashboard {
-      position: fixed; top: 0; right: 0; width: 300px; height: 100vh;
-      background: var(--glass); backdrop-filter: blur(30px);
-      box-shadow: -10px 0 30px rgba(0,0,0,0.1);
-      transform: translateX(100%); transition: transform 0.3s ease;
-      padding: 24px 18px; overflow-y: auto; z-index: 1000;
-      border-left: 1px solid var(--glass-border);
-    }
-    .dashboard.open { transform: translateX(0); }
-    .dashboard h3 { margin-bottom: 18px; color: var(--text); font-weight: 600; }
-    .dashboard label { display: block; margin: 14px 0 6px; font-weight: 500; color: var(--text); font-size: 0.85rem; }
-    .dashboard select { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); outline: none; }
-    .dashboard-close { position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text); }
+/* ─── Generating screen ─── */
+#screenGen{align-items:center;justify-content:center;gap:26px;padding:20px;}
+.wave{display:flex;align-items:flex-end;gap:5px;height:60px;}
+.wave span{
+  width:6px;border-radius:4px;
+  background:linear-gradient(180deg,var(--amber),var(--clay));
+  animation:wv 1.1s ease-in-out infinite;
+}
+.wave span:nth-child(1){animation-delay:-1.0s;height:20%;}
+.wave span:nth-child(2){animation-delay:-0.8s;height:45%;}
+.wave span:nth-child(3){animation-delay:-0.6s;height:75%;}
+.wave span:nth-child(4){animation-delay:-0.4s;height:100%;}
+.wave span:nth-child(5){animation-delay:-0.2s;height:60%;}
+.wave span:nth-child(6){animation-delay:0s;height:35%;}
+.wave span:nth-child(7){animation-delay:-0.5s;height:80%;}
+@keyframes wv{0%,100%{transform:scaleY(0.35);}50%{transform:scaleY(1);}}
+#genStatus{font-size:14px;color:var(--muted);text-align:center;}
+#genStatus b{color:var(--ink);}
 
-    .search-indicator {
-      background: var(--badge-bg); color: var(--badge-color); align-self: flex-start;
-      padding: 4px 12px; border-radius: 100px; font-size: 0.75rem; font-weight: 500;
-    }
+/* ─── Result screen ─── */
+#screenResult{padding:20px;gap:16px;align-items:center;justify-content:center;}
+#resultVideo{width:100%;max-width:340px;border-radius:var(--r);background:#000;aspect-ratio:9/16;object-fit:cover;}
+.result-actions{display:flex;gap:10px;width:100%;max-width:340px;}
+.btn{flex:1;padding:14px;border-radius:30px;font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:linear-gradient(135deg,var(--amber),var(--clay));color:#1A1310;}
+.btn-ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink);}
+.redo-link{font-size:12.5px;color:var(--muted);text-decoration:underline;margin-top:4px;}
 
-    .file-preview { max-width: 160px; border-radius: 14px; margin-top: 6px; }
+/* ─── Toast ─── */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(20,17,16,0.96);border:1px solid var(--line);
+  color:var(--ink);padding:11px 18px;border-radius:24px;font-size:13px;
+  opacity:0;transition:opacity .25s,transform .25s;z-index:999;max-width:88vw;text-align:center;
+  pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-    .chat-box::-webkit-scrollbar { width: 4px; }
-    .chat-box::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
-  </style>
+canvas{display:none;}
+</style>
 </head>
 <body>
-  <div class="app-container">
-    <div class="chat-header">
-      <div class="header-left">
-        <div class="avatar-wrapper" id="avatarContainer" title="Photo de profil">
-          <!-- Logo SVG élégant à la place de l'emoji -->
-          <svg viewBox="0 0 24 24" id="defaultLogo">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-          </svg>
-        </div>
-        <div class="header-info">
-          <h2>Aesmarket</h2>
-          <span>Assistant personnel</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button class="icon-btn" id="dashboardBtn">⚙️</button>
-        <button class="icon-btn" id="toggleSearchModeBtn">🔍</button>
-        <button class="icon-btn" id="themeToggle">🌗</button>
-        <button class="icon-btn" id="newChatBtn">↺</button>
-      </div>
-    </div>
 
-    <div class="chat-box" id="chatBox">
-      <!-- Les messages s'affichent ici -->
-    </div>
+<div class="topbar">
+  <div class="disp">PAROLE</div>
+  <div class="tag">Ta photo prend la parole</div>
+</div>
 
-    <div class="chat-input-area">
-      <input type="text" id="userInput" placeholder="Écris un message..." autofocus />
-      <input type="file" id="fileInput" style="display:none" accept=".pdf,image/*,.txt,.md" />
-      <button class="input-action" id="attachBtn">📎</button>
-      <button class="input-action mic-btn" id="micBtn">🎤</button>
-      <button class="input-action" id="sendBtn">↑</button>
-    </div>
+<!-- ═══ ÉCRAN 1 — Photo + texte + voix ═══ -->
+<div class="screen active" id="screenEdit">
+
+  <div>
+    <span class="field-label">Photo</span>
+    <label class="dropzone" id="dropzone">
+      <span class="dz-icon">📷</span>
+      <span class="dz-label">Choisir une photo</span>
+      <span class="dz-sub">Elle restera sur ton téléphone</span>
+      <input type="file" accept="image/*" id="photoInput">
+    </label>
   </div>
 
-  <!-- Dashboard -->
-  <div class="dashboard" id="dashboard">
-    <button class="dashboard-close" id="dashboardClose">✕</button>
-    <h3>Réglages</h3>
-    <label>Personnalité</label>
-    <select id="personaSelect">
-      <option value="default">Standard</option>
-      <option value="professeur">Professeur</option>
-      <option value="coach">Coach</option>
-      <option value="codeur">Codeur</option>
-      <option value="poete">Poète</option>
-    </select>
-    <label>Recherche directe</label>
-    <input type="checkbox" id="pureSearchMode" /> Activer (ou /s)
-    <button class="icon-btn" id="exportBtn" style="margin-top:20px;">📤 Exporter</button>
+  <div>
+    <span class="field-label">Ce que la photo va dire</span>
+    <textarea id="txtInput" maxlength="700" placeholder="Écris ton message... il sera lu à voix haute sur la vidéo"></textarea>
+    <div class="char-row"><span id="charCount">0 / 700</span><span id="durEstimate"></span></div>
   </div>
 
-  <input type="file" id="avatarFileInput" style="display:none" accept="image/*" />
+  <div>
+    <span class="field-label">Voix</span>
+    <div class="voice-grid" id="voiceGrid"></div>
+  </div>
 
-  <script>
-    // ================= CONFIGURATION =================
-    const GEMINI_API_KEY = "AQ.Ab8RN6JxYSOsyIGimdzc2RxILWjYdSGAUkb9aE4vry-feLQQNw";
-    const MODEL_NAME = "gemini-3.5-flash";
-    const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`;
-    
-    const DUCKDUCKGO_API = "https://api.duckduckgo.com/";
+  <div>
+    <span class="field-label">Style visuel</span>
+    <div class="voice-grid" id="filterGrid"></div>
+  </div>
 
-    // Clé imgBB (gratuit) pour l'avatar personnalisé
-    const IMGBB_API_KEY = "TA_CLE_IMGBB"; // Remplace par ta clé imgBB
-    const IMGBB_URL = `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`;
+  <div>
+    <span class="field-label">Musique de fond <span style="text-transform:none;font-weight:400;">(optionnel)</span></span>
+    <label class="music-upload" id="musicUpload">
+      <span id="musicLabel">🎵 Ajouter un fichier audio</span>
+      <input type="file" accept="audio/*" id="musicInput">
+    </label>
+  </div>
 
-    const PERSONAS = {
-      default: "Tu es un assistant utile et précis. Réponds en français.",
-      professeur: "Tu es un professeur patient. Explique de manière structurée. Réponds en français.",
-      coach: "Tu es un coach de vie bienveillant. Motive et encourage. Réponds en français.",
-      codeur: "Tu es un expert en programmation. Donne des solutions techniques. Réponds en français.",
-      poete: "Tu es un poète sensible. Réponds en vers. Réponds en français."
+  <button class="generate-btn" id="genBtn" disabled>🎙️ Générer la vidéo</button>
+</div>
+
+<!-- ═══ ÉCRAN 2 — Génération ═══ -->
+<div class="screen" id="screenGen">
+  <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <div id="genStatus">Préparation...</div>
+</div>
+
+<!-- ═══ ÉCRAN 3 — Résultat ═══ -->
+<div class="screen" id="screenResult">
+  <video id="resultVideo" playsinline loop controls></video>
+  <div class="result-actions">
+    <button class="btn btn-primary" id="shareBtn">↗️ Partager</button>
+    <button class="btn btn-ghost" id="downloadBtn">⬇️ Enregistrer</button>
+  </div>
+  <div class="redo-link" id="redoBtn">↺ Recommencer avec une autre photo</div>
+</div>
+
+<canvas id="canvas" width="720" height="1280"></canvas>
+<audio id="ttsAudio" playsinline></audio>
+<audio id="musicAudio" playsinline loop></audio>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  ÉTAT
+// ═══════════════════════════════════════
+// ⚠️ Clé ElevenLabs — gratuite, inscription sans carte bancaire sur elevenlabs.io
+// Colle ta clé ici (Profil → API Keys). Quota gratuit : 10 000 caractères/mois,
+// PARTAGÉS entre tous les utilisateurs de l'app (pas par personne) — pas d'usage
+// commercial sur ce tier tant que tu restes gratuit.
+const ELEVEN_KEY = 'sk_a7eecea0804dabc953410c4199ced12cea4035572f27c401';
+
+// ⚠️ Les voice_id ci-dessous sont des PLACEHOLDERS — va dans la Bibliothèque de voix
+// ElevenLabs (elevenlabs.io/app/voice-library), cherche le nom, clique "Use voice",
+// puis copie le voice_id (visible dans tes "My Voices" ou via l'API Voices) et colle-le ici.
+const VOICES = [
+  // — Français / Afrique de l'Ouest —
+  { id:'4SFJvuIUvxaPLgk8FoK3',  name:'Alimata', desc:'FR · Féminine, accent africain' },
+  { id:'COLLE_ID_LANDRY',   name:'Landry',  desc:'FR · Masculine, jeune, accent africain — colle son voice_id' },
+  { id:'COLLE_ID_LEA',      name:'Léa',     desc:'FR · Féminine, calme et posée — colle son voice_id' },
+  { id:'COLLE_ID_SEBASTIEN',name:'Sébastien', desc:'FR · Masculine, chaleureuse — colle son voice_id' },
+];
+let selectedVoice = 0; // index dans VOICES (Alimata par défaut)
+
+function getVoiceConf(idx){
+  return VOICES[idx] || VOICES[0];
+}
+
+const FILTERS = [
+  { id:'original', name:'Original',  desc:'Sans retouche',       css:'none' },
+  { id:'warm',      name:'Chaleureux', desc:'Tons dorés',        css:'sepia(0.28) saturate(1.35) contrast(1.05) brightness(1.02) hue-rotate(-6deg)' },
+  { id:'bw',        name:'Noir & Blanc', desc:'Contrasté',       css:'grayscale(1) contrast(1.15)' },
+  { id:'vivid',     name:'Vif',       desc:'Couleurs pop',       css:'saturate(1.5) contrast(1.18) brightness(1.03)' },
+];
+let selectedFilter = 'original';
+
+let musicFile = null;
+
+// Le contexte audio et les noeuds source doivent être créés une seule fois par
+// élément <audio> (le navigateur interdit un deuxième createMediaElementSource
+// sur le même élément) — on les met donc en cache pour pouvoir régénérer.
+let sharedAudioCtx = null;
+let voiceSourceNode = null;
+let musicSourceNode = null;
+
+function getAudioCtx(){
+  if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return sharedAudioCtx;
+}
+function getVoiceSourceNode(audioEl){
+  if(!voiceSourceNode) voiceSourceNode = getAudioCtx().createMediaElementSource(audioEl);
+  else voiceSourceNode.disconnect();
+  return voiceSourceNode;
+}
+function getMusicSourceNode(musicEl){
+  if(!musicSourceNode) musicSourceNode = getAudioCtx().createMediaElementSource(musicEl);
+  else musicSourceNode.disconnect();
+  return musicSourceNode;
+}
+let photoImg = null;
+let recordedBlob = null;
+let recordedMime = 'video/webm';
+
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3200);
+}
+
+// ═══════════════════════════════════════
+//  ÉCRAN 1 — setup
+// ═══════════════════════════════════════
+function renderVoiceGrid(){
+  const grid = $('voiceGrid');
+  let html = '';
+  VOICES.forEach((v, i)=>{
+    html += `
+    <div class="voice-pill${i===selectedVoice?' active':''}" data-voice="${i}">
+      <div class="vp-name">${v.name}</div>
+      <div class="vp-desc">${v.desc}</div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+  grid.querySelectorAll('.voice-pill').forEach(el=>{
+    el.onclick = ()=>{
+      selectedVoice = parseInt(el.dataset.voice, 10);
+      grid.querySelectorAll('.voice-pill').forEach(p=>p.classList.remove('active'));
+      el.classList.add('active');
     };
+  });
+}
+renderVoiceGrid();
 
-    // État
-    let currentPersona = localStorage.getItem('aesmarket_persona') || 'default';
-    let messages = [];
-    let pureSearchMode = false;
-    let darkMode = localStorage.getItem('aesmarket_dark') === 'true';
-    let avatarUrl = localStorage.getItem('aesmarket_avatar') || '';
+function renderFilterGrid(){
+  const grid = $('filterGrid');
+  grid.innerHTML = FILTERS.map(f => `
+    <div class="voice-pill${f.id===selectedFilter?' active':''}" data-filter="${f.id}">
+      <div class="vp-name">${f.name}</div>
+      <div class="vp-desc">${f.desc}</div>
+    </div>`).join('');
+  grid.querySelectorAll('.voice-pill').forEach(el=>{
+    el.onclick = ()=>{
+      selectedFilter = el.dataset.filter;
+      grid.querySelectorAll('.voice-pill').forEach(p=>p.classList.remove('active'));
+      el.classList.add('active');
+    };
+  });
+}
+renderFilterGrid();
 
-    // DOM
-    const chatBox = document.getElementById('chatBox');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const micBtn = document.getElementById('micBtn');
-    const attachBtn = document.getElementById('attachBtn');
-    const fileInput = document.getElementById('fileInput');
-    const dashboard = document.getElementById('dashboard');
-    const dashboardBtn = document.getElementById('dashboardBtn');
-    const dashboardClose = document.getElementById('dashboardClose');
-    const personaSelect = document.getElementById('personaSelect');
-    const pureSearchModeCheckbox = document.getElementById('pureSearchMode');
-    const toggleSearchModeBtn = document.getElementById('toggleSearchModeBtn');
-    const themeToggle = document.getElementById('themeToggle');
-    const newChatBtn = document.getElementById('newChatBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const avatarContainer = document.getElementById('avatarContainer');
-    const defaultLogo = document.getElementById('defaultLogo');
-    const avatarFileInput = document.getElementById('avatarFileInput');
+$('musicInput').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  musicFile = f;
+  $('musicAudio').src = URL.createObjectURL(f);
+  const upload = $('musicUpload');
+  $('musicLabel').textContent = `🎵 ${f.name}`;
+  if(!upload.querySelector('.music-clear')){
+    const clear = document.createElement('span');
+    clear.className = 'music-clear';
+    clear.textContent = 'Retirer';
+    clear.onclick = (ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      musicFile = null;
+      $('musicInput').value = '';
+      $('musicAudio').removeAttribute('src');
+      $('musicLabel').textContent = '🎵 Ajouter un fichier audio';
+      clear.remove();
+    };
+    upload.appendChild(clear);
+  }
+});
 
-    if (darkMode) document.body.classList.add('dark');
-    themeToggle.textContent = darkMode ? '☀️' : '🌙';
+$('photoInput').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = ()=>{
+    photoImg = img;
+    const dz = $('dropzone');
+    dz.style.backgroundImage = '';
+    const existing = dz.querySelector('img');
+    if(existing) existing.remove();
+    const imgEl = document.createElement('img');
+    imgEl.src = url;
+    dz.prepend(imgEl);
+    const badge = document.createElement('div');
+    badge.className = 'dz-change';
+    badge.textContent = '🔄 Changer';
+    dz.querySelectorAll('.dz-change').forEach(b=>b.remove());
+    dz.appendChild(badge);
+    $('dropzone').querySelector('.dz-icon').style.display='none';
+    $('dropzone').querySelector('.dz-label').style.display='none';
+    $('dropzone').querySelector('.dz-sub').style.display='none';
+    updateGenButton();
+  };
+  img.src = url;
+});
 
-    // Gestion de l'avatar
-    function updateAvatar(url) {
-      // Supprime l'ancien contenu (logo SVG ou image)
-      avatarContainer.innerHTML = '';
-      if (url) {
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = 'Avatar';
-        avatarContainer.appendChild(img);
-      } else {
-        // Réaffiche le logo SVG
-        avatarContainer.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`;
-      }
-    }
+$('txtInput').addEventListener('input', ()=>{
+  const len = $('txtInput').value.length;
+  $('charCount').textContent = `${len} / 700`;
+  const words = $('txtInput').value.trim().split(/\s+/).filter(Boolean).length;
+  const secs = Math.max(1, Math.round(words / 2.4));
+  $('durEstimate').textContent = words ? `≈ ${secs}s de vidéo` : '';
+  updateGenButton();
+});
 
-    if (avatarUrl) updateAvatar(avatarUrl);
-    else updateAvatar('');
+function updateGenButton(){
+  const hasText = $('txtInput').value.trim().length > 0;
+  $('genBtn').disabled = !(photoImg && hasText);
+}
 
-    avatarContainer.addEventListener('click', () => avatarFileInput.click());
-    avatarFileInput.addEventListener('change', async () => {
-      const file = avatarFileInput.files[0];
-      if (!file) return;
-      avatarContainer.innerHTML = '⏳';
-      const formData = new FormData();
-      formData.append('image', file);
-      try {
-        const resp = await fetch(IMGBB_URL, { method: 'POST', body: formData });
-        const data = await resp.json();
-        if (data.success) {
-          avatarUrl = data.data.url;
-          localStorage.setItem('aesmarket_avatar', avatarUrl);
-          updateAvatar(avatarUrl);
-        } else {
-          throw new Error('Échec upload');
-        }
-      } catch (e) {
-        alert('Erreur lors du téléchargement de l\'avatar.');
-        updateAvatar(avatarUrl);
-      }
-      avatarFileInput.value = '';
-    });
+// ═══════════════════════════════════════
+//  SCREENS
+// ═══════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
 
-    // Fonctions d'affichage
-    function addMessage(role, content) {
-      const div = document.createElement('div');
-      div.className = `message ${role}`;
-      div.innerHTML = `
-        <div class="message-avatar">${role === 'user' ? '👤' : '🤖'}</div>
-        <div class="message-bubble">${content}</div>
-        ${role === 'assistant' ? '<button class="speak-btn">🔊</button>' : ''}
-      `;
-      if (role === 'assistant') {
-        div.querySelector('.speak-btn').onclick = () => speakText(content);
-      }
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      return div;
-    }
-
-    function addStreamingBubble() {
-      const div = document.createElement('div');
-      div.className = 'message assistant';
-      div.innerHTML = `<div class="message-avatar">🤖</div><div class="message-bubble" id="streamBubble"></div>`;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-      return document.getElementById('streamBubble');
-    }
-
-    function addSystemMsg(text) {
-      const div = document.createElement('div');
-      div.className = 'search-indicator';
-      div.textContent = text;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function speakText(text) {
-      if (!('speechSynthesis' in window)) return;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
-    }
-
-    // Outils
-    function safeCalculate(expr) {
-      try {
-        const result = new Function('return ' + expr)();
-        return `Résultat : ${expr} = ${result}`;
-      } catch {
-        return "Calcul invalide.";
-      }
-    }
-
-    async function executeTool(tool, arg) {
-      if (tool === 'CALC') return safeCalculate(arg);
-      if (tool === 'WEATHER') {
-        try {
-          const resp = await fetch(`https://wttr.in/${encodeURIComponent(arg)}?format=3`);
-          return `Météo ${arg} : ${(await resp.text()).trim()}`;
-        } catch { return "Météo indisponible."; }
-      }
-      return null;
-    }
-
-    async function searchWebRaw(query) {
-      try {
-        const resp = await fetch(`${DUCKDUCKGO_API}?q=${encodeURIComponent(query)}&format=json&no_html=1`);
-        const data = await resp.json();
-        let result = '';
-        if (data.Abstract) result += `📝 ${data.Abstract}\n`;
-        if (data.AbstractURL) result += `🔗 ${data.AbstractURL}\n`;
-        if (data.RelatedTopics?.length) {
-          result += '\n🔹 Liens :\n';
-          data.RelatedTopics.slice(0,5).forEach(t => { if (t.Text) result += `- ${t.Text}\n`; });
-        }
-        return result || "Aucun résultat.";
-      } catch { return "Erreur recherche."; }
-    }
-
-    // Appel API (streaming)
-    async function callApiStream(msgs) {
-      const contents = [];
-      let sys = '';
-      for (const m of msgs) {
-        if (m.role === 'system') { sys = m.content; continue; }
-        contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
-      }
-      const response = await fetch(GEMINI_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: { parts: [{ text: sys }] },
-          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-        })
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `Erreur ${response.status}`);
-      }
-      return response;
-    }
-
-    async function streamResponse(response, bubble) {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let full = '', buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split('\n');
-        buf = lines.pop();
-        for (let line of lines) {
-          let data = line.trim();
-          if (!data || !data.startsWith('data: ')) continue;
-          data = data.slice(6);
-          if (data === '[DONE]') break;
-          try {
-            const parsed = JSON.parse(data);
-            const t = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            full += t;
-            bubble.textContent = full;
-            chatBox.scrollTop = chatBox.scrollHeight;
-          } catch(e) {}
-        }
-      }
-      return full;
-    }
-
-    // Envoi principal
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-
-      sendBtn.disabled = true;
-      userInput.value = '';
-
-      // Recherche directe
-      if (pureSearchMode || text.startsWith('/s ')) {
-        const query = text.startsWith('/s ') ? text.slice(3).trim() : text;
-        addMessage('user', text);
-        addSystemMsg(`🔍 Recherche : ${query}`);
-        const results = await searchWebRaw(query);
-        addMessage('assistant', results);
-        sendBtn.disabled = false;
-        userInput.focus();
-        return;
-      }
-
-      addMessage('user', text);
-      messages.push({ role: 'user', content: text });
-      if (messages.length === 1) {
-        messages.unshift({ role: 'system', content: PERSONAS[currentPersona] });
-      }
-
-      // Détection outils/recherche
-      let searchQuery = null, toolMatch = null;
-      try {
-        const checkUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
-        const checkBody = {
-          contents: messages.filter(m => m.role !== 'system').map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }]
-          })),
-          systemInstruction: { parts: [{ text: PERSONAS[currentPersona] }] },
-          generationConfig: { temperature: 0, maxOutputTokens: 30 }
-        };
-        const checkResp = await fetch(checkUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(checkBody)
-        });
-        if (checkResp.ok) {
-          const checkData = await checkResp.json();
-          const firstWords = checkData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          if (firstWords.startsWith('SEARCH:')) {
-            searchQuery = firstWords.replace('SEARCH:', '').trim();
-          } else if (firstWords.startsWith('TOOL:')) {
-            const m = firstWords.slice(5).trim().match(/^(CALC|WEATHER)\((.+)\)/);
-            if (m) toolMatch = { tool: m[1], arg: m[2] };
-          }
-        }
-      } catch(e) {}
-
-      if (toolMatch) {
-        addSystemMsg(`🛠️ Outil : ${toolMatch.tool}(${toolMatch.arg})`);
-        const toolRes = await executeTool(toolMatch.tool, toolMatch.arg);
-        messages.push({ role: 'system', content: toolRes });
-      }
-      if (searchQuery) {
-        addSystemMsg(`🔍 Recherche : ${searchQuery}`);
-        const res = await searchWebRaw(searchQuery);
-        messages.push({ role: 'system', content: `Résultats "${searchQuery}":\n${res}` });
-      }
-
-      // Limiter historique
-      let estimated = messages.reduce((s, m) => s + m.content.length / 4, 0);
-      while (messages.length > 2 && estimated > 5000) {
-        const removed = messages.splice(1, 1)[0];
-        estimated -= removed.content.length / 4;
-      }
-
-      const bubble = addStreamingBubble();
-      try {
-        const response = await callApiStream(messages);
-        const fullResponse = await streamResponse(response, bubble);
-        messages.push({ role: 'assistant', content: fullResponse });
-        localStorage.setItem('aesmarket_messages', JSON.stringify(messages));
-      } catch (error) {
-        bubble.textContent = `❌ Erreur : ${error.message}`;
-      } finally {
-        sendBtn.disabled = false;
-        userInput.focus();
-      }
-    }
-
-    // Événements
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
-    });
-
-    // Reconnaissance vocale
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'fr-FR';
-      recognition.interimResults = false;
-      recognition.onresult = (event) => {
-        userInput.value = event.results[0][0].transcript;
-        sendMessage();
-      };
-      recognition.onend = () => micBtn.classList.remove('recording');
-      micBtn.addEventListener('click', () => {
-        if (micBtn.classList.contains('recording')) recognition.stop();
-        else recognition.start();
-        micBtn.classList.toggle('recording');
-      });
+// ═══════════════════════════════════════
+//  GÉNÉRATION — TTS + enregistrement canvas/audio
+// ═══════════════════════════════════════
+function wrapText(ctx, text, maxWidth){
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = '';
+  words.forEach(w=>{
+    const test = line ? line + ' ' + w : w;
+    if(ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = w;
     } else {
-      micBtn.disabled = true;
+      line = test;
+    }
+  });
+  if(line) lines.push(line);
+  return lines;
+}
+
+// Construit des "légendes" façon TikTok (2-4 mots à l'écran) avec un timing
+// estimé au prorata de la longueur de chaque mot (pas de timestamps réels
+// disponibles via VoiceRSS, mais l'estimation colle très bien en pratique).
+function buildCaptions(ctx, text, duration, maxWidth){
+  const rawWords = text.split(/\s+/).filter(Boolean);
+  if(rawWords.length === 0) return [];
+
+  const weights = rawWords.map(w => w.length + 2); // +2 = pause moyenne entre mots
+  const totalWeight = weights.reduce((a,b)=>a+b,0);
+
+  let cursor = 0;
+  const timedWords = rawWords.map((w, i)=>{
+    const start = duration * (cursor / totalWeight);
+    cursor += weights[i];
+    const end = duration * (cursor / totalWeight);
+    return { text: w, start, end };
+  });
+
+  // Groupe les mots en légendes de 2-4 mots, en respectant la largeur max du canvas
+  ctx.font = '700 38px "Work Sans"';
+  const gap = 12;
+  const groups = [];
+  let current = [];
+  let currentWidth = 0;
+
+  timedWords.forEach(w=>{
+    const wWidth = ctx.measureText(w.text).width;
+    const wouldWidth = currentWidth + (current.length ? gap : 0) + wWidth;
+    const tooWide = wouldWidth > maxWidth;
+    const tooMany = current.length >= 4;
+    if(current.length && (tooWide || tooMany)){
+      groups.push(current);
+      current = [];
+      currentWidth = 0;
+    }
+    current.push(w);
+    currentWidth += (current.length > 1 ? gap : 0) + wWidth;
+  });
+  if(current.length) groups.push(current);
+
+  return groups.map(words => ({
+    words,
+    start: words[0].start,
+    end: words[words.length - 1].end,
+  }));
+}
+
+
+function pickMimeType(){
+  const candidates = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ];
+  return candidates.find(c => window.MediaRecorder && MediaRecorder.isTypeSupported(c)) || '';
+}
+
+async function generate(){
+  const text = $('txtInput').value.trim();
+  if(!photoImg || !text) return;
+
+  if(!ELEVEN_KEY || ELEVEN_KEY === 'COLLE_TA_CLE_ELEVENLABS_ICI'){
+    showToast('⚠️ Ajoute ta clé ElevenLabs gratuite dans le code (ELEVEN_KEY) avant de générer');
+    return;
+  }
+
+  $('genBtn').disabled = true;
+  showScreen('screenGen');
+  $('genStatus').innerHTML = '<b>Synthèse de la voix...</b>';
+
+  try {
+    // 1) Récupérer l'audio généré (ElevenLabs — voix ultra naturelles, quota gratuit partagé)
+    const vConf = getVoiceConf(selectedVoice);
+    if(vConf.id.startsWith('COLLE_ID_')){
+      throw new Error('voice_id_missing');
+    }
+    const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${vConf.id}`;
+    const res = await fetch(ttsUrl, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVEN_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_flash_v2_5', // consomme moins de crédits que multilingual_v2
+      }),
+    });
+    if(!res.ok){
+      const errText = await res.text().catch(()=> '');
+      console.warn('ElevenLabs error:', res.status, errText);
+      throw new Error('tts_failed');
+    }
+    const audioBlob = await res.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    const audioEl = $('ttsAudio');
+    audioEl.src = audioUrl;
+    await new Promise((resolve, reject)=>{
+      audioEl.onloadedmetadata = resolve;
+      audioEl.onerror = ()=>reject(new Error('audio_decode_failed'));
+    });
+    const duration = isFinite(audioEl.duration) && audioEl.duration > 0 ? audioEl.duration : 6;
+
+    $('genStatus').innerHTML = '<b>Préparation de l\'image...</b>';
+    await document.fonts.load('700 40px Fraunces');
+    await document.fonts.load('600 30px "Work Sans"');
+
+    // 2) Préparer le canvas (format vertical 9:16, façon statut WhatsApp)
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    // Découpage du texte en "légendes" façon TikTok, synchronisées avec l'audio.
+    // VoiceRSS ne fournit pas de timestamps mot-par-mot : on estime le timing
+    // de chaque mot au prorata de sa longueur, ce qui colle bien en pratique.
+    const captions = buildCaptions(ctx, text, duration, W - 90);
+    const filterConf = FILTERS.find(f => f.id === selectedFilter) || FILTERS[0];
+
+    function getActiveCaption(elapsed){
+      for(const cap of captions){
+        if(elapsed >= cap.start && elapsed < cap.end) return cap;
+      }
+      return captions[captions.length - 1] || null;
     }
 
-    // UI
-    dashboardBtn.addEventListener('click', () => dashboard.classList.toggle('open'));
-    dashboardClose.addEventListener('click', () => dashboard.classList.remove('open'));
-    personaSelect.value = currentPersona;
-    personaSelect.addEventListener('change', () => {
-      currentPersona = personaSelect.value;
-      localStorage.setItem('aesmarket_persona', currentPersona);
-      if (messages.length > 0 && messages[0].role === 'system') messages[0].content = PERSONAS[currentPersona];
-    });
-    pureSearchModeCheckbox.checked = pureSearchMode;
-    pureSearchModeCheckbox.addEventListener('change', () => pureSearchMode = pureSearchModeCheckbox.checked);
-    toggleSearchModeBtn.addEventListener('click', () => {
-      pureSearchMode = !pureSearchMode;
-      pureSearchModeCheckbox.checked = pureSearchMode;
-    });
+    function drawFrame(elapsed){
+      const p = Math.min(1, elapsed / duration);
+      const scale = 1 + 0.07 * p; // léger effet Ken Burns
 
-    themeToggle.addEventListener('click', () => {
-      darkMode = !darkMode;
-      document.body.classList.toggle('dark', darkMode);
-      localStorage.setItem('aesmarket_dark', darkMode);
-      themeToggle.textContent = darkMode ? '☀️' : '🌙';
-    });
+      // Image en cover-fit
+      const iw = photoImg.width, ih = photoImg.height;
+      const canvasRatio = W / H, imgRatio = iw / ih;
+      let dw, dh;
+      if(imgRatio > canvasRatio){ dh = H * scale; dw = dh * imgRatio; }
+      else { dw = W * scale; dh = dw / imgRatio; }
+      const dx = (W - dw) / 2, dy = (H - dh) / 2;
 
-    newChatBtn.addEventListener('click', () => {
-      if (confirm('Effacer la conversation ?')) {
-        messages = [];
-        chatBox.innerHTML = '';
-        localStorage.removeItem('aesmarket_messages');
-        addMessage('assistant', '👋 Nouvelle conversation.');
+      ctx.fillStyle = '#0c0a09';
+      ctx.fillRect(0,0,W,H);
+
+      ctx.filter = filterConf.css;
+      ctx.drawImage(photoImg, dx, dy, dw, dh);
+      ctx.filter = 'none';
+
+      // Vignette subtile pour donner du relief à l'image
+      const vig = ctx.createRadialGradient(W/2, H*0.42, H*0.25, W/2, H*0.42, H*0.75);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = vig;
+      ctx.fillRect(0,0,W,H);
+
+      // Voile dégradé bas pour lisibilité du texte
+      const grad = ctx.createLinearGradient(0, H*0.45, 0, H);
+      grad.addColorStop(0, 'rgba(12,10,9,0)');
+      grad.addColorStop(1, 'rgba(12,10,9,0.88)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, H*0.45, W, H*0.55);
+
+      // Sous-titre synchronisé, mot actif surligné (style karaoké TikTok)
+      const cap = getActiveCaption(elapsed);
+      if(cap){
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '700 38px "Work Sans"';
+        const ty = H - 150;
+
+        // Largeur totale de la ligne pour la centrer mot par mot
+        const gap = 12;
+        const widths = cap.words.map(w => ctx.measureText(w.text).width);
+        const totalW = widths.reduce((a,b)=>a+b,0) + gap * (cap.words.length - 1);
+        let cx = W/2 - totalW/2;
+
+        cap.words.forEach((w, i)=>{
+          const isActive = elapsed >= w.start && elapsed < w.end;
+          ctx.fillStyle = isActive ? '#E3A33D' : '#F4EEE3';
+
+          if(isActive){
+            // Petit effet "pop" sur le mot au moment où il est prononcé
+            const t = Math.min(1, (elapsed - w.start) / 0.18);
+            const bounce = Math.sin(t * Math.PI) * 0.16;
+            const wordCx = cx + widths[i] / 2;
+            ctx.save();
+            ctx.translate(wordCx, ty);
+            ctx.scale(1 + bounce, 1 + bounce);
+            ctx.translate(-wordCx, -ty);
+            ctx.fillText(w.text, cx, ty);
+            ctx.restore();
+          } else {
+            ctx.fillText(w.text, cx, ty);
+          }
+          cx += widths[i] + gap;
+        });
       }
-    });
 
-    exportBtn.addEventListener('click', () => {
-      const text = messages.filter(m => m.role !== 'system').map(m => m.content).join('\n\n');
-      const blob = new Blob([text], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'conversation.txt';
-      a.click();
-    });
+      // Marque
+      ctx.font = '700 24px Fraunces';
+      ctx.fillStyle = 'rgba(227,163,61,0.9)';
+      ctx.fillText('PAROLE', W/2, 56);
+    }
 
-    attachBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', async () => {
-      for (const file of fileInput.files) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const content = e.target.result.slice(0, 2000);
-          addMessage('user', `[Fichier: ${file.name}]`);
-          messages.push({ role: 'user', content: `[Fichier: ${file.name}]\n${content}` });
-          localStorage.setItem('aesmarket_messages', JSON.stringify(messages));
-        };
-        reader.readAsText(file);
-      }
-      fileInput.value = '';
-    });
+    drawFrame(0); // première frame avant l'enregistrement
 
-    // Initialisation
-    function init() {
-      const saved = localStorage.getItem('aesmarket_messages');
-      if (saved) {
-        try {
-          messages = JSON.parse(saved);
-          chatBox.innerHTML = '';
-          messages.forEach(m => { if (m.role !== 'system') addMessage(m.role, m.content); });
-        } catch (e) { messages = []; }
-      }
-      if (messages.length === 0) {
-        messages = [{ role: 'system', content: PERSONAS[currentPersona] }];
-        addMessage('assistant', '✨ Bienvenue sur Aesmarket ! Comment puis-je vous aider ?');
+    // 3) Flux vidéo (canvas) + flux audio mixé (voix + musique de fond optionnelle)
+    const videoStream = canvas.captureStream(30);
+
+    if(!(window.AudioContext || window.webkitAudioContext)) throw new Error('capture_unsupported');
+    const audioCtx = getAudioCtx();
+    if(audioCtx.state === 'suspended') await audioCtx.resume();
+    const dest = audioCtx.createMediaStreamDestination();
+
+    const voiceNode = getVoiceSourceNode(audioEl);
+    const voiceGain = audioCtx.createGain();
+    voiceGain.gain.value = 1;
+    voiceNode.connect(voiceGain).connect(dest);
+    voiceGain.connect(audioCtx.destination); // pour entendre pendant l'enregistrement
+
+    const musicEl = $('musicAudio');
+    let musicGain = null;
+    if(musicFile){
+      const musicNode = getMusicSourceNode(musicEl);
+      musicGain = audioCtx.createGain();
+      musicGain.gain.value = 0.16; // musique discrète, sous la voix
+      musicNode.connect(musicGain).connect(dest);
+      musicGain.connect(audioCtx.destination);
+    }
+
+    const mixedStream = new MediaStream([
+      ...videoStream.getVideoTracks(),
+      ...dest.stream.getAudioTracks(),
+    ]);
+
+    const mimeType = pickMimeType();
+    if(!mimeType) throw new Error('recorder_unsupported');
+    recordedMime = mimeType.split(';')[0];
+
+    const chunks = [];
+    const recorder = new MediaRecorder(mixedStream, { mimeType, videoBitsPerSecond: 2_500_000 });
+    recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+
+    const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+    $('genStatus').innerHTML = '<b>Enregistrement de la vidéo...</b>';
+
+    let rafId;
+    const startTime = performance.now();
+    function loop(){
+      const elapsed = (performance.now() - startTime) / 1000;
+      drawFrame(elapsed);
+      if(elapsed < duration + 0.3){
+        rafId = requestAnimationFrame(loop);
       }
     }
 
-    init();
-  </script>
+    recorder.start();
+    try {
+      if(musicFile){
+        musicEl.currentTime = 0;
+        musicEl.play().catch(()=>{}); // la musique reste optionnelle si le play échoue
+      }
+      await audioEl.play();
+    } catch(playErr){
+      recorder.stop();
+      throw new Error('play_blocked');
+    }
+    loop();
+
+    await new Promise(resolve=>{
+      audioEl.onended = resolve;
+    });
+    if(musicFile) musicEl.pause();
+    cancelAnimationFrame(rafId);
+    await new Promise(r=>setTimeout(r, 250)); // petite marge pour ne pas couper le son
+    recorder.stop();
+    await stopped;
+
+    recordedBlob = new Blob(chunks, { type: recordedMime });
+    const videoUrl = URL.createObjectURL(recordedBlob);
+    $('resultVideo').src = videoUrl;
+    showScreen('screenResult');
+
+  } catch(err){
+    console.warn('Génération échouée', err);
+    showScreen('screenEdit');
+    $('genBtn').disabled = false;
+    if(err.message === 'voice_id_missing'){
+      showToast('⚠️ Colle le voice_id de cette voix ElevenLabs dans le code (VOICES) avant de générer');
+    } else if(err.message === 'play_blocked'){
+      showToast('⚠️ Appuie sur Générer une deuxième fois pour autoriser le son');
+    } else if(err.message === 'recorder_unsupported' || err.message === 'capture_unsupported'){
+      showToast('⚠️ Ton navigateur ne supporte pas l\'enregistrement vidéo — mets à jour Android System WebView');
+    } else if(err.message === 'tts_failed' || err.message === 'audio_decode_failed'){
+      showToast('⚠️ Impossible de générer la voix — vérifie ta connexion et réessaie');
+    } else {
+      showToast('⚠️ Une erreur est survenue, réessaie');
+    }
+  }
+}
+
+$('genBtn').addEventListener('click', generate);
+
+// ═══════════════════════════════════════
+//  RÉSULTAT — partager / enregistrer / recommencer
+// ═══════════════════════════════════════
+$('shareBtn').addEventListener('click', async ()=>{
+  if(!recordedBlob) return;
+  const ext = recordedMime.includes('mp4') ? 'mp4' : 'webm';
+  const file = new File([recordedBlob], `parole.${ext}`, { type: recordedMime });
+  try {
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], title:'PAROLE' });
+      return;
+    }
+    throw new Error('share_unsupported');
+  } catch(e){
+    showToast('↗️ Partage direct indisponible — utilise "Enregistrer" puis partage depuis ta galerie');
+  }
+});
+
+$('downloadBtn').addEventListener('click', ()=>{
+  if(!recordedBlob) return;
+  const ext = recordedMime.includes('mp4') ? 'mp4' : 'webm';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(recordedBlob);
+  a.download = `parole-${Date.now()}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showToast('✅ Vidéo enregistrée');
+});
+
+$('redoBtn').addEventListener('click', ()=>{
+  photoImg = null;
+  recordedBlob = null;
+  $('txtInput').value = '';
+  $('charCount').textContent = '0 / 700';
+  $('durEstimate').textContent = '';
+  const dz = $('dropzone');
+  dz.querySelectorAll('img, .dz-change').forEach(el=>el.remove());
+  dz.querySelector('.dz-icon').style.display='';
+  dz.querySelector('.dz-label').style.display='';
+  dz.querySelector('.dz-sub').style.display='';
+  $('photoInput').value = '';
+  updateGenButton();
+  showScreen('screenEdit');
+});
+</script>
 </body>
 </html>
