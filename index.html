@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>PAROLE — Ta photo prend la parole</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141110;
+  --surface:#1D1814;
+  --surface2:#241E18;
+  --ink:#F4EEE3;
+  --muted:#9A8F7E;
+  --amber:#E3A33D;
+  --clay:#C1512F;
+  --line:rgba(244,238,227,0.09);
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Work Sans',sans-serif;
+  overscroll-behavior:none;
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;flex-direction:column;
+}
+h1,h2,.disp{font-family:'Fraunces',serif;}
+button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer;}
+input,textarea{font-family:inherit;}
+
+/* ─── Header ─── */
+.topbar{
+  padding:22px 20px 14px;display:flex;align-items:baseline;gap:10px;
+  border-bottom:1px solid var(--line);
+}
+.topbar .disp{font-size:22px;font-weight:700;letter-spacing:0.5px;}
+.topbar .tag{font-size:11.5px;color:var(--muted);}
+
+.screen{display:none;flex:1;flex-direction:column;min-height:0;}
+.screen.active{display:flex;}
+
+/* ─── Upload / edit screen ─── */
+#screenEdit{padding:20px;gap:18px;overflow-y:auto;padding-bottom:110px;}
+
+.dropzone{
+  position:relative;width:100%;aspect-ratio:4/5;border-radius:var(--r);
+  background:var(--surface);border:1.5px dashed rgba(244,238,227,0.18);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  overflow:hidden;color:var(--muted);text-align:center;
+}
+.dropzone img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+.dropzone .dz-icon{font-size:34px;}
+.dropzone .dz-label{font-size:13px;font-weight:600;color:var(--ink);}
+.dropzone .dz-sub{font-size:11.5px;color:var(--muted);}
+.dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.dz-change{
+  position:absolute;top:10px;right:10px;background:rgba(20,17,16,0.7);
+  backdrop-filter:blur(6px);border:1px solid rgba(244,238,227,0.2);
+  border-radius:20px;padding:6px 13px;font-size:11.5px;font-weight:600;
+  color:#fff;z-index:2;pointer-events:none;
+}
+
+.field-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:block;}
+
+textarea#txtInput{
+  width:100%;min-height:104px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);
+  color:var(--ink);padding:14px;font-size:15.5px;line-height:1.55;
+  resize:none;outline:none;
+}
+textarea#txtInput:focus{border-color:rgba(227,163,61,0.5);}
+.char-row{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--muted);}
+
+.voice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.voice-group-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:12px 0 6px;grid-column:1 / -1;}
+.voice-pill{
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:11px 8px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.voice-pill .vp-name{font-size:12.5px;font-weight:700;}
+.voice-pill .vp-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+.voice-pill.active{border-color:var(--amber);background:rgba(227,163,61,0.1);}
+.voice-pill.active .vp-name{color:var(--amber);}
+
+.music-upload{
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  padding:13px 14px;font-size:13px;font-weight:600;color:var(--ink);
+}
+.music-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.music-clear{
+  font-size:11px;font-weight:700;color:var(--muted);text-decoration:underline;
+  position:relative;z-index:2;pointer-events:auto;
+}
+
+.generate-btn{
+  width:100%;padding:16px;border-radius:30px;
+  background:linear-gradient(135deg,var(--amber),var(--clay));
+  color:#1A1310;font-weight:700;font-size:15px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 8px 24px rgba(227,163,61,0.25);
+}
+.generate-btn:disabled{opacity:0.4;box-shadow:none;}
+.generate-btn:active{transform:scale(0.98);}
+
+/* ─── Generating screen ─── */
+#screenGen{align-items:center;justify-content:center;gap:26px;padding:20px;}
+.wave{display:flex;align-items:flex-end;gap:5px;height:60px;}
+.wave span{
+  width:6px;border-radius:4px;
+  background:linear-gradient(180deg,var(--amber),var(--clay));
+  animation:wv 1.1s ease-in-out infinite;
+}
+.wave span:nth-child(1){animation-delay:-1.0s;height:20%;}
+.wave span:nth-child(2){animation-delay:-0.8s;height:45%;}
+.wave span:nth-child(3){animation-delay:-0.6s;height:75%;}
+.wave span:nth-child(4){animation-delay:-0.4s;height:100%;}
+.wave span:nth-child(5){animation-delay:-0.2s;height:60%;}
+.wave span:nth-child(6){animation-delay:0s;height:35%;}
+.wave span:nth-child(7){animation-delay:-0.5s;height:80%;}
+@keyframes wv{0%,100%{transform:scaleY(0.35);}50%{transform:scaleY(1);}}
+#genStatus{font-size:14px;color:var(--muted);text-align:center;}
+#genStatus b{color:var(--ink);}
+
+/* ─── Result screen ─── */
+#screenResult{padding:20px;gap:16px;align-items:center;justify-content:center;}
+#resultVideo{width:100%;max-width:340px;border-radius:var(--r);background:#000;aspect-ratio:9/16;object-fit:cover;}
+.result-actions{display:flex;gap:10px;width:100%;max-width:340px;}
+.btn{flex:1;padding:14px;border-radius:30px;font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:linear-gradient(135deg,var(--amber),var(--clay));color:#1A1310;}
+.btn-ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink);}
+.redo-link{font-size:12.5px;color:var(--muted);text-decoration:underline;margin-top:4px;}
+
+/* ─── Toast ─── */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(20,17,16,0.96);border:1px solid var(--line);
+  color:var(--ink);padding:11px 18px;border-radius:24px;font-size:13px;
+  opacity:0;transition:opacity .25s,transform .25s;z-index:999;max-width:88vw;text-align:center;
+  pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+canvas{display:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="disp">PAROLE</div>
+  <div class="tag">Ta photo prend la parole</div>
+</div>
+
+<!-- ═══ ÉCRAN 1 — Photo + texte + voix ═══ -->
+<div class="screen active" id="screenEdit">
+
+  <div>
+    <span class="field-label">Photo</span>
+    <label class="dropzone" id="dropzone">
+      <span class="dz-icon">📷</span>
+      <span class="dz-label">Choisir une photo</span>
+      <span class="dz-sub">Elle restera sur ton téléphone</span>
+      <input type="file" accept="image/*" id="photoInput">
+    </label>
+  </div>
+
+  <div>
+    <span class="field-label">Ce que la photo va dire</span>
+    <textarea id="txtInput" maxlength="700" placeholder="Écris ton message... il sera lu à voix haute sur la vidéo"></textarea>
+    <div class="char-row"><span id="charCount">0 / 700</span><span id="durEstimate"></span></div>
+  </div>
+
+  <div>
+    <span class="field-label">Voix</span>
+    <div class="voice-grid" id="voiceGrid"></div>
+  </div>
+
+  <div>
+    <span class="field-label">Style visuel</span>
+    <div class="voice-grid" id="filterGrid"></div>
+  </div>
+
+  <div>
+    <span class="field-label">Musique de fond <span style="text-transform:none;font-weight:400;">(optionnel)</span></span>
+    <label class="music-upload" id="musicUpload">
+      <span id="musicLabel">🎵 Ajouter un fichier audio</span>
+      <input type="file" accept="audio/*" id="musicInput">
+    </label>
+  </div>
+
+  <button class="generate-btn" id="genBtn" disabled>🎙️ Générer la vidéo</button>
+</div>
+
+<!-- ═══ ÉCRAN 2 — Génération ═══ -->
+<div class="screen" id="screenGen">
+  <div class="wave"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+  <div id="genStatus">Préparation...</div>
+</div>
+
+<!-- ═══ ÉCRAN 3 — Résultat ═══ -->
+<div class="screen" id="screenResult">
+  <video id="resultVideo" playsinline loop controls></video>
+  <div class="result-actions">
+    <button class="btn btn-primary" id="shareBtn">↗️ Partager</button>
+    <button class="btn btn-ghost" id="downloadBtn">⬇️ Enregistrer</button>
+  </div>
+  <div class="redo-link" id="redoBtn">↺ Recommencer avec une autre photo</div>
+</div>
+
+<canvas id="canvas" width="720" height="1280"></canvas>
+<audio id="ttsAudio" playsinline></audio>
+<audio id="musicAudio" playsinline loop></audio>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  ÉTAT
+// ═══════════════════════════════════════
+// ⚠️ Clé ElevenLabs — gratuite, inscription sans carte bancaire sur elevenlabs.io
+// Colle ta clé ici (Profil → API Keys). Quota gratuit : 10 000 caractères/mois,
+// PARTAGÉS entre tous les utilisateurs de l'app (pas par personne) — pas d'usage
+// commercial sur ce tier tant que tu restes gratuit.
+const ELEVEN_KEY = 'sk_a7eecea0804dabc953410c4199ced12cea4035572f27c401';
+
+// ⚠️ Les voice_id ci-dessous sont des PLACEHOLDERS — va dans la Bibliothèque de voix
+// ElevenLabs (elevenlabs.io/app/voice-library), cherche le nom, clique "Use voice",
+// puis copie le voice_id (visible dans tes "My Voices" ou via l'API Voices) et colle-le ici.
+const VOICES = [
+  // — Français / Afrique de l'Ouest —
+  { id:'4SFJvuIUvxaPLgk8FoK3',  name:'Alimata', desc:'FR · Féminine, accent africain' },
+  { id:'COLLE_ID_LANDRY',   name:'Landry',  desc:'FR · Masculine, jeune, accent africain — colle son voice_id' },
+  { id:'COLLE_ID_LEA',      name:'Léa',     desc:'FR · Féminine, calme et posée — colle son voice_id' },
+  { id:'COLLE_ID_SEBASTIEN',name:'Sébastien', desc:'FR · Masculine, chaleureuse — colle son voice_id' },
+];
+let selectedVoice = 0; // index dans VOICES (Alimata par défaut)
+
+function getVoiceConf(idx){
+  return VOICES[idx] || VOICES[0];
+}
+
+const FILTERS = [
+  { id:'original', name:'Original',  desc:'Sans retouche',       css:'none' },
+  { id:'warm',      name:'Chaleureux', desc:'Tons dorés',        css:'sepia(0.28) saturate(1.35) contrast(1.05) brightness(1.02) hue-rotate(-6deg)' },
+  { id:'bw',        name:'Noir & Blanc', desc:'Contrasté',       css:'grayscale(1) contrast(1.15)' },
+  { id:'vivid',     name:'Vif',       desc:'Couleurs pop',       css:'saturate(1.5) contrast(1.18) brightness(1.03)' },
+];
+let selectedFilter = 'original';
+
+let musicFile = null;
+
+// Le contexte audio et les noeuds source doivent être créés une seule fois par
+// élément <audio> (le navigateur interdit un deuxième createMediaElementSource
+// sur le même élément) — on les met donc en cache pour pouvoir régénérer.
+let sharedAudioCtx = null;
+let voiceSourceNode = null;
+let musicSourceNode = null;
+
+function getAudioCtx(){
+  if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return sharedAudioCtx;
+}
+function getVoiceSourceNode(audioEl){
+  if(!voiceSourceNode) voiceSourceNode = getAudioCtx().createMediaElementSource(audioEl);
+  else voiceSourceNode.disconnect();
+  return voiceSourceNode;
+}
+function getMusicSourceNode(musicEl){
+  if(!musicSourceNode) musicSourceNode = getAudioCtx().createMediaElementSource(musicEl);
+  else musicSourceNode.disconnect();
+  return musicSourceNode;
+}
+let photoImg = null;
+let recordedBlob = null;
+let recordedMime = 'video/webm';
+
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg){
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 3200);
+}
+
+// ═══════════════════════════════════════
+//  ÉCRAN 1 — setup
+// ═══════════════════════════════════════
+function renderVoiceGrid(){
+  const grid = $('voiceGrid');
+  let html = '';
+  VOICES.forEach((v, i)=>{
+    html += `
+    <div class="voice-pill${i===selectedVoice?' active':''}" data-voice="${i}">
+      <div class="vp-name">${v.name}</div>
+      <div class="vp-desc">${v.desc}</div>
+    </div>`;
+  });
+  grid.innerHTML = html;
+  grid.querySelectorAll('.voice-pill').forEach(el=>{
+    el.onclick = ()=>{
+      selectedVoice = parseInt(el.dataset.voice, 10);
+      grid.querySelectorAll('.voice-pill').forEach(p=>p.classList.remove('active'));
+      el.classList.add('active');
+    };
+  });
+}
+renderVoiceGrid();
+
+function renderFilterGrid(){
+  const grid = $('filterGrid');
+  grid.innerHTML = FILTERS.map(f => `
+    <div class="voice-pill${f.id===selectedFilter?' active':''}" data-filter="${f.id}">
+      <div class="vp-name">${f.name}</div>
+      <div class="vp-desc">${f.desc}</div>
+    </div>`).join('');
+  grid.querySelectorAll('.voice-pill').forEach(el=>{
+    el.onclick = ()=>{
+      selectedFilter = el.dataset.filter;
+      grid.querySelectorAll('.voice-pill').forEach(p=>p.classList.remove('active'));
+      el.classList.add('active');
+    };
+  });
+}
+renderFilterGrid();
+
+$('musicInput').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  musicFile = f;
+  $('musicAudio').src = URL.createObjectURL(f);
+  const upload = $('musicUpload');
+  $('musicLabel').textContent = `🎵 ${f.name}`;
+  if(!upload.querySelector('.music-clear')){
+    const clear = document.createElement('span');
+    clear.className = 'music-clear';
+    clear.textContent = 'Retirer';
+    clear.onclick = (ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      musicFile = null;
+      $('musicInput').value = '';
+      $('musicAudio').removeAttribute('src');
+      $('musicLabel').textContent = '🎵 Ajouter un fichier audio';
+      clear.remove();
+    };
+    upload.appendChild(clear);
+  }
+});
+
+$('photoInput').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = ()=>{
+    photoImg = img;
+    const dz = $('dropzone');
+    dz.style.backgroundImage = '';
+    const existing = dz.querySelector('img');
+    if(existing) existing.remove();
+    const imgEl = document.createElement('img');
+    imgEl.src = url;
+    dz.prepend(imgEl);
+    const badge = document.createElement('div');
+    badge.className = 'dz-change';
+    badge.textContent = '🔄 Changer';
+    dz.querySelectorAll('.dz-change').forEach(b=>b.remove());
+    dz.appendChild(badge);
+    $('dropzone').querySelector('.dz-icon').style.display='none';
+    $('dropzone').querySelector('.dz-label').style.display='none';
+    $('dropzone').querySelector('.dz-sub').style.display='none';
+    updateGenButton();
+  };
+  img.src = url;
+});
+
+$('txtInput').addEventListener('input', ()=>{
+  const len = $('txtInput').value.length;
+  $('charCount').textContent = `${len} / 700`;
+  const words = $('txtInput').value.trim().split(/\s+/).filter(Boolean).length;
+  const secs = Math.max(1, Math.round(words / 2.4));
+  $('durEstimate').textContent = words ? `≈ ${secs}s de vidéo` : '';
+  updateGenButton();
+});
+
+function updateGenButton(){
+  const hasText = $('txtInput').value.trim().length > 0;
+  $('genBtn').disabled = !(photoImg && hasText);
+}
+
+// ═══════════════════════════════════════
+//  SCREENS
+// ═══════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ═══════════════════════════════════════
+//  GÉNÉRATION — TTS + enregistrement canvas/audio
+// ═══════════════════════════════════════
+function wrapText(ctx, text, maxWidth){
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = '';
+  words.forEach(w=>{
+    const test = line ? line + ' ' + w : w;
+    if(ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  });
+  if(line) lines.push(line);
+  return lines;
+}
+
+// Construit des "légendes" façon TikTok (2-4 mots à l'écran) avec un timing
+// estimé au prorata de la longueur de chaque mot (pas de timestamps réels
+// disponibles via VoiceRSS, mais l'estimation colle très bien en pratique).
+function buildCaptions(ctx, text, duration, maxWidth){
+  const rawWords = text.split(/\s+/).filter(Boolean);
+  if(rawWords.length === 0) return [];
+
+  const weights = rawWords.map(w => w.length + 2); // +2 = pause moyenne entre mots
+  const totalWeight = weights.reduce((a,b)=>a+b,0);
+
+  let cursor = 0;
+  const timedWords = rawWords.map((w, i)=>{
+    const start = duration * (cursor / totalWeight);
+    cursor += weights[i];
+    const end = duration * (cursor / totalWeight);
+    return { text: w, start, end };
+  });
+
+  // Groupe les mots en légendes de 2-4 mots, en respectant la largeur max du canvas
+  ctx.font = '700 38px "Work Sans"';
+  const gap = 12;
+  const groups = [];
+  let current = [];
+  let currentWidth = 0;
+
+  timedWords.forEach(w=>{
+    const wWidth = ctx.measureText(w.text).width;
+    const wouldWidth = currentWidth + (current.length ? gap : 0) + wWidth;
+    const tooWide = wouldWidth > maxWidth;
+    const tooMany = current.length >= 4;
+    if(current.length && (tooWide || tooMany)){
+      groups.push(current);
+      current = [];
+      currentWidth = 0;
+    }
+    current.push(w);
+    currentWidth += (current.length > 1 ? gap : 0) + wWidth;
+  });
+  if(current.length) groups.push(current);
+
+  return groups.map(words => ({
+    words,
+    start: words[0].start,
+    end: words[words.length - 1].end,
+  }));
+}
+
+
+function pickMimeType(){
+  const candidates = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm',
+  ];
+  return candidates.find(c => window.MediaRecorder && MediaRecorder.isTypeSupported(c)) || '';
+}
+
+async function generate(){
+  const text = $('txtInput').value.trim();
+  if(!photoImg || !text) return;
+
+  if(!ELEVEN_KEY || ELEVEN_KEY === 'COLLE_TA_CLE_ELEVENLABS_ICI'){
+    showToast('⚠️ Ajoute ta clé ElevenLabs gratuite dans le code (ELEVEN_KEY) avant de générer');
+    return;
+  }
+
+  $('genBtn').disabled = true;
+  showScreen('screenGen');
+  $('genStatus').innerHTML = '<b>Synthèse de la voix...</b>';
+
+  try {
+    // 1) Récupérer l'audio généré (ElevenLabs — voix ultra naturelles, quota gratuit partagé)
+    const vConf = getVoiceConf(selectedVoice);
+    if(vConf.id.startsWith('COLLE_ID_')){
+      throw new Error('voice_id_missing');
+    }
+    const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${vConf.id}`;
+    const res = await fetch(ttsUrl, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVEN_KEY,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_flash_v2_5', // consomme moins de crédits que multilingual_v2
+      }),
+    });
+    if(!res.ok){
+      const errText = await res.text().catch(()=> '');
+      console.warn('ElevenLabs error:', res.status, errText);
+      throw new Error('tts_failed');
+    }
+    const audioBlob = await res.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    const audioEl = $('ttsAudio');
+    audioEl.src = audioUrl;
+    await new Promise((resolve, reject)=>{
+      audioEl.onloadedmetadata = resolve;
+      audioEl.onerror = ()=>reject(new Error('audio_decode_failed'));
+    });
+    const duration = isFinite(audioEl.duration) && audioEl.duration > 0 ? audioEl.duration : 6;
+
+    $('genStatus').innerHTML = '<b>Préparation de l\'image...</b>';
+    await document.fonts.load('700 40px Fraunces');
+    await document.fonts.load('600 30px "Work Sans"');
+
+    // 2) Préparer le canvas (format vertical 9:16, façon statut WhatsApp)
+    const canvas = $('canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    // Découpage du texte en "légendes" façon TikTok, synchronisées avec l'audio.
+    // VoiceRSS ne fournit pas de timestamps mot-par-mot : on estime le timing
+    // de chaque mot au prorata de sa longueur, ce qui colle bien en pratique.
+    const captions = buildCaptions(ctx, text, duration, W - 90);
+    const filterConf = FILTERS.find(f => f.id === selectedFilter) || FILTERS[0];
+
+    function getActiveCaption(elapsed){
+      for(const cap of captions){
+        if(elapsed >= cap.start && elapsed < cap.end) return cap;
+      }
+      return captions[captions.length - 1] || null;
+    }
+
+    function drawFrame(elapsed){
+      const p = Math.min(1, elapsed / duration);
+      const scale = 1 + 0.07 * p; // léger effet Ken Burns
+
+      // Image en cover-fit
+      const iw = photoImg.width, ih = photoImg.height;
+      const canvasRatio = W / H, imgRatio = iw / ih;
+      let dw, dh;
+      if(imgRatio > canvasRatio){ dh = H * scale; dw = dh * imgRatio; }
+      else { dw = W * scale; dh = dw / imgRatio; }
+      const dx = (W - dw) / 2, dy = (H - dh) / 2;
+
+      ctx.fillStyle = '#0c0a09';
+      ctx.fillRect(0,0,W,H);
+
+      ctx.filter = filterConf.css;
+      ctx.drawImage(photoImg, dx, dy, dw, dh);
+      ctx.filter = 'none';
+
+      // Vignette subtile pour donner du relief à l'image
+      const vig = ctx.createRadialGradient(W/2, H*0.42, H*0.25, W/2, H*0.42, H*0.75);
+      vig.addColorStop(0, 'rgba(0,0,0,0)');
+      vig.addColorStop(1, 'rgba(0,0,0,0.35)');
+      ctx.fillStyle = vig;
+      ctx.fillRect(0,0,W,H);
+
+      // Voile dégradé bas pour lisibilité du texte
+      const grad = ctx.createLinearGradient(0, H*0.45, 0, H);
+      grad.addColorStop(0, 'rgba(12,10,9,0)');
+      grad.addColorStop(1, 'rgba(12,10,9,0.88)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, H*0.45, W, H*0.55);
+
+      // Sous-titre synchronisé, mot actif surligné (style karaoké TikTok)
+      const cap = getActiveCaption(elapsed);
+      if(cap){
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '700 38px "Work Sans"';
+        const ty = H - 150;
+
+        // Largeur totale de la ligne pour la centrer mot par mot
+        const gap = 12;
+        const widths = cap.words.map(w => ctx.measureText(w.text).width);
+        const totalW = widths.reduce((a,b)=>a+b,0) + gap * (cap.words.length - 1);
+        let cx = W/2 - totalW/2;
+
+        cap.words.forEach((w, i)=>{
+          const isActive = elapsed >= w.start && elapsed < w.end;
+          ctx.fillStyle = isActive ? '#E3A33D' : '#F4EEE3';
+
+          if(isActive){
+            // Petit effet "pop" sur le mot au moment où il est prononcé
+            const t = Math.min(1, (elapsed - w.start) / 0.18);
+            const bounce = Math.sin(t * Math.PI) * 0.16;
+            const wordCx = cx + widths[i] / 2;
+            ctx.save();
+            ctx.translate(wordCx, ty);
+            ctx.scale(1 + bounce, 1 + bounce);
+            ctx.translate(-wordCx, -ty);
+            ctx.fillText(w.text, cx, ty);
+            ctx.restore();
+          } else {
+            ctx.fillText(w.text, cx, ty);
+          }
+          cx += widths[i] + gap;
+        });
+      }
+
+      // Marque
+      ctx.font = '700 24px Fraunces';
+      ctx.fillStyle = 'rgba(227,163,61,0.9)';
+      ctx.fillText('PAROLE', W/2, 56);
+    }
+
+    drawFrame(0); // première frame avant l'enregistrement
+
+    // 3) Flux vidéo (canvas) + flux audio mixé (voix + musique de fond optionnelle)
+    const videoStream = canvas.captureStream(30);
+
+    if(!(window.AudioContext || window.webkitAudioContext)) throw new Error('capture_unsupported');
+    const audioCtx = getAudioCtx();
+    if(audioCtx.state === 'suspended') await audioCtx.resume();
+    const dest = audioCtx.createMediaStreamDestination();
+
+    const voiceNode = getVoiceSourceNode(audioEl);
+    const voiceGain = audioCtx.createGain();
+    voiceGain.gain.value = 1;
+    voiceNode.connect(voiceGain).connect(dest);
+    voiceGain.connect(audioCtx.destination); // pour entendre pendant l'enregistrement
+
+    const musicEl = $('musicAudio');
+    let musicGain = null;
+    if(musicFile){
+      const musicNode = getMusicSourceNode(musicEl);
+      musicGain = audioCtx.createGain();
+      musicGain.gain.value = 0.16; // musique discrète, sous la voix
+      musicNode.connect(musicGain).connect(dest);
+      musicGain.connect(audioCtx.destination);
+    }
+
+    const mixedStream = new MediaStream([
+      ...videoStream.getVideoTracks(),
+      ...dest.stream.getAudioTracks(),
+    ]);
+
+    const mimeType = pickMimeType();
+    if(!mimeType) throw new Error('recorder_unsupported');
+    recordedMime = mimeType.split(';')[0];
+
+    const chunks = [];
+    const recorder = new MediaRecorder(mixedStream, { mimeType, videoBitsPerSecond: 2_500_000 });
+    recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+
+    const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+    $('genStatus').innerHTML = '<b>Enregistrement de la vidéo...</b>';
+
+    let rafId;
+    const startTime = performance.now();
+    function loop(){
+      const elapsed = (performance.now() - startTime) / 1000;
+      drawFrame(elapsed);
+      if(elapsed < duration + 0.3){
+        rafId = requestAnimationFrame(loop);
+      }
+    }
+
+    recorder.start();
+    try {
+      if(musicFile){
+        musicEl.currentTime = 0;
+        musicEl.play().catch(()=>{}); // la musique reste optionnelle si le play échoue
+      }
+      await audioEl.play();
+    } catch(playErr){
+      recorder.stop();
+      throw new Error('play_blocked');
+    }
+    loop();
+
+    await new Promise(resolve=>{
+      audioEl.onended = resolve;
+    });
+    if(musicFile) musicEl.pause();
+    cancelAnimationFrame(rafId);
+    await new Promise(r=>setTimeout(r, 250)); // petite marge pour ne pas couper le son
+    recorder.stop();
+    await stopped;
+
+    recordedBlob = new Blob(chunks, { type: recordedMime });
+    const videoUrl = URL.createObjectURL(recordedBlob);
+    $('resultVideo').src = videoUrl;
+    showScreen('screenResult');
+
+  } catch(err){
+    console.warn('Génération échouée', err);
+    showScreen('screenEdit');
+    $('genBtn').disabled = false;
+    if(err.message === 'voice_id_missing'){
+      showToast('⚠️ Colle le voice_id de cette voix ElevenLabs dans le code (VOICES) avant de générer');
+    } else if(err.message === 'play_blocked'){
+      showToast('⚠️ Appuie sur Générer une deuxième fois pour autoriser le son');
+    } else if(err.message === 'recorder_unsupported' || err.message === 'capture_unsupported'){
+      showToast('⚠️ Ton navigateur ne supporte pas l\'enregistrement vidéo — mets à jour Android System WebView');
+    } else if(err.message === 'tts_failed' || err.message === 'audio_decode_failed'){
+      showToast('⚠️ Impossible de générer la voix — vérifie ta connexion et réessaie');
+    } else {
+      showToast('⚠️ Une erreur est survenue, réessaie');
+    }
+  }
+}
+
+$('genBtn').addEventListener('click', generate);
+
+// ═══════════════════════════════════════
+//  RÉSULTAT — partager / enregistrer / recommencer
+// ═══════════════════════════════════════
+$('shareBtn').addEventListener('click', async ()=>{
+  if(!recordedBlob) return;
+  const ext = recordedMime.includes('mp4') ? 'mp4' : 'webm';
+  const file = new File([recordedBlob], `parole.${ext}`, { type: recordedMime });
+  try {
+    if(navigator.canShare && navigator.canShare({ files:[file] })){
+      await navigator.share({ files:[file], title:'PAROLE' });
+      return;
+    }
+    throw new Error('share_unsupported');
+  } catch(e){
+    showToast('↗️ Partage direct indisponible — utilise "Enregistrer" puis partage depuis ta galerie');
+  }
+});
+
+$('downloadBtn').addEventListener('click', ()=>{
+  if(!recordedBlob) return;
+  const ext = recordedMime.includes('mp4') ? 'mp4' : 'webm';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(recordedBlob);
+  a.download = `parole-${Date.now()}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showToast('✅ Vidéo enregistrée');
+});
+
+$('redoBtn').addEventListener('click', ()=>{
+  photoImg = null;
+  recordedBlob = null;
+  $('txtInput').value = '';
+  $('charCount').textContent = '0 / 700';
+  $('durEstimate').textContent = '';
+  const dz = $('dropzone');
+  dz.querySelectorAll('img, .dz-change').forEach(el=>el.remove());
+  dz.querySelector('.dz-icon').style.display='';
+  dz.querySelector('.dz-label').style.display='';
+  dz.querySelector('.dz-sub').style.display='';
+  $('photoInput').value = '';
+  updateGenButton();
+  showScreen('screenEdit');
+});
+</script>
+</body>
+</html>
