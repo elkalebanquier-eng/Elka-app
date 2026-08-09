@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -173,7 +174,7 @@
   }
   .engine-pill.ready{color:var(--ok); border-color:rgba(61,220,132,.35); background:rgba(61,220,132,.08);}
   .engine-pill.ready .spinner{display:none;}
-  .engine-pill.error{color:var(--danger); border-color:rgba(255,91,110,.35); background:rgba(255,91,110,.08);}
+  .engine-pill.error{color:var(--danger); border-color:rgba(255,91,110,.35); background:rgba(255,91,110,.08); cursor:pointer;}
   .engine-pill.error .spinner{display:none;}
   .engine-pill .dot{width:7px; height:7px; border-radius:50%; background:var(--ok); display:none;}
   .engine-pill.ready .dot{display:inline-block;}
@@ -281,10 +282,8 @@
 
 <div class="toast" id="toast"></div>
 
-<!-- MediaPipe Selfie Segmentation (CDN officiel) -->
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"
-        onload="window.__mediapipeScriptState='loaded'; window.dispatchEvent(new Event('mediapipe-script-loaded'))"
-        onerror="window.__mediapipeScriptState='error'; window.dispatchEvent(new Event('mediapipe-script-error'))"></script>
+<!-- MediaPipe Selfie Segmentation chargé dynamiquement en JS (voir plus bas), avec CDN de secours -->
+
 
 <script>
 (function(){
@@ -344,17 +343,56 @@
 
   /* ===================== CHARGEMENT DU MOTEUR MEDIAPIPE ===================== */
   let mediapipeState = 'loading'; // 'loading' | 'ready' | 'error'
+  let mediapipeBase = null; // base URL du CDN qui a fonctionné (pour locateFile)
+
+  const CDN_BASES = [
+    'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/',
+    'https://unpkg.com/@mediapipe/selfie_segmentation/'
+  ];
 
   function setEnginePill(mode, text){
     enginePill.classList.remove('ready','error');
     if(mode==='ready') enginePill.classList.add('ready');
     if(mode==='error') enginePill.classList.add('error');
     engineText.textContent = text;
+    enginePill.style.opacity = '1';
+  }
+
+  function loadScriptOnce(url){
+    return new Promise((resolve, reject)=>{
+      const s = document.createElement('script');
+      s.src = url;
+      s.onload = ()=>resolve();
+      s.onerror = ()=>{ s.remove(); reject(new Error('échec: '+url)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  async function loadMediapipeWithFallback(){
+    setEnginePill('loading', 'Chargement du moteur IA...');
+    for(const base of CDN_BASES){
+      try{
+        await loadScriptOnce(base + 'selfie_segmentation.js');
+        if(typeof SelfieSegmentation !== 'undefined'){
+          mediapipeBase = base;
+          return true;
+        }
+      }catch(e){
+        console.warn(e.message);
+      }
+    }
+    return false;
   }
 
   async function warmUpMediapipe(){
+    segmenter = null; // on repart d'un segmenteur propre à chaque tentative
+    const scriptOk = await loadMediapipeWithFallback();
+    if(!scriptOk){
+      mediapipeState = 'error';
+      setEnginePill('error', "Moteur IA bloqué. Vérifie ta connexion ou désactive le bloqueur de scripts, puis touche ici.");
+      return;
+    }
     try{
-      if(typeof SelfieSegmentation === 'undefined') throw new Error('script manquant');
       setEnginePill('loading', 'Téléchargement du modèle IA...');
       const seg = getSegmenter();
       if(typeof seg.initialize === 'function'){
@@ -362,23 +400,19 @@
       }
       mediapipeState = 'ready';
       setEnginePill('ready', 'Moteur IA prêt');
-      // masque discrètement le badge après un court instant une fois prêt
       setTimeout(()=>{ enginePill.style.opacity='0'; }, 2200);
     }catch(err){
       console.error(err);
       mediapipeState = 'error';
-      setEnginePill('error', 'Moteur IA indisponible (vérifie ta connexion)');
+      setEnginePill('error', "Modèle IA indisponible. Touche ici pour réessayer.");
     }
   }
 
-  window.addEventListener('mediapipe-script-loaded', warmUpMediapipe);
-  window.addEventListener('mediapipe-script-error', ()=>{
-    mediapipeState = 'error';
-    setEnginePill('error', 'Impossible de charger le moteur IA (hors ligne ?)');
+  enginePill.addEventListener('click', ()=>{
+    if(mediapipeState==='error') warmUpMediapipe();
   });
-  // Au cas où le script était déjà chargé avant l'attache de ces écouteurs
-  if(window.__mediapipeScriptState === 'loaded') warmUpMediapipe();
-  else if(window.__mediapipeScriptState === 'error') { mediapipeState='error'; setEnginePill('error','Impossible de charger le moteur IA (hors ligne ?)'); }
+
+  warmUpMediapipe();
 
   /* ===================== SÉLECTION PHOTO ===================== */
   $('btnPickPhoto').addEventListener('click', ()=>fileInput.click());
@@ -394,7 +428,11 @@
     }
     goto(editorScreen);
     if(mediapipeState==='error'){
-      showToast("Le moteur IA n'a pas pu se charger. Vérifie ta connexion puis réessaie.");
+      showToast("Le moteur IA n'a pas pu se charger. Nouvelle tentative...");
+      await warmUpMediapipe();
+      if(mediapipeState==='error'){
+        showToast("Toujours indisponible. Vérifie ta connexion ou désactive le bloqueur de scripts (bouclier Brave) pour ce site.");
+      }
     }
     showStatus(mediapipeState==='ready' ? '⏳ Analyse de la photo...' : '⏳ Chargement du moteur IA...');
     try{
@@ -459,8 +497,9 @@
     if(typeof SelfieSegmentation === 'undefined'){
       throw new Error('MediaPipe non chargé (connexion internet requise au premier lancement).');
     }
+    const base = mediapipeBase || CDN_BASES[0];
     segmenter = new SelfieSegmentation({
-      locateFile: (f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${f}`
+      locateFile: (f)=> base + f
     });
     segmenter.setOptions({ modelSelection: 1, selfieMode:false });
     return segmenter;
