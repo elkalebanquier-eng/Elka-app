@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -179,6 +178,22 @@
   .engine-pill .dot{width:7px; height:7px; border-radius:50%; background:var(--ok); display:none;}
   .engine-pill.ready .dot{display:inline-block;}
   .engine-pill.error .dot{display:inline-block; background:var(--danger);}
+  .engine-detail{
+    max-width:320px; font-size:10.5px; color:#6d6d78; text-align:center;
+    line-height:1.5; font-family:monospace; word-break:break-word;
+    display:none; padding:0 8px;
+  }
+  .engine-detail.show{display:block;}
+  .engine-bar-track{
+    width:220px; height:5px; border-radius:100px; background:var(--panel-2);
+    border:1px solid var(--line); overflow:hidden; display:none;
+  }
+  .engine-bar-track.show{display:block;}
+  .engine-bar-fill{
+    height:100%; width:0%; border-radius:100px;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    transition:width .25s ease;
+  }
 </style>
 </head>
 <body>
@@ -202,6 +217,10 @@
     <span class="spinner"></span>
     <span id="engineText">Préparation du moteur IA...</span>
   </div>
+  <div class="engine-bar-track" id="engineBarTrack">
+    <div class="engine-bar-fill" id="engineBarFill"></div>
+  </div>
+  <div class="engine-detail" id="engineDetail"></div>
 </section>
 
 <!-- ============ EDITOR ============ -->
@@ -326,7 +345,8 @@
   const stage = $('stage'); const ctx = stage.getContext('2d');
   const statusPill = $('statusPill'), statusText = $('statusText');
   const toast = $('toast');
-  const enginePill = $('enginePill'), engineText = $('engineText');
+  const enginePill = $('enginePill'), engineText = $('engineText'), engineDetail = $('engineDetail');
+  const engineBarTrack = $('engineBarTrack'), engineBarFill = $('engineBarFill');
 
   function showToast(msg, ms){
     toast.textContent = msg;
@@ -350,61 +370,145 @@
     'https://unpkg.com/@mediapipe/selfie_segmentation/'
   ];
 
-  function setEnginePill(mode, text){
+  function setEnginePill(mode, text, detail){
     enginePill.classList.remove('ready','error');
     if(mode==='ready') enginePill.classList.add('ready');
     if(mode==='error') enginePill.classList.add('error');
     engineText.textContent = text;
     enginePill.style.opacity = '1';
+    if(detail){
+      engineDetail.textContent = detail;
+      engineDetail.classList.add('show');
+    }else{
+      engineDetail.classList.remove('show');
+      engineDetail.textContent = '';
+    }
+  }
+
+  function setEngineProgress(pct, visible){
+    if(visible===false){ engineBarTrack.classList.remove('show'); return; }
+    engineBarTrack.classList.add('show');
+    engineBarFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  // Télécharge le script en suivant la vraie progression (Content-Length),
+  // puis l'exécute. Si le serveur ne fournit pas de Content-Length, on
+  // retombe sur un chargement classique sans pourcentage précis.
+  async function fetchScriptWithProgress(url, onProgress){
+    const res = await fetch(url, {cache:'force-cache'});
+    if(!res.ok) throw new Error(`HTTP ${res.status} sur ${url}`);
+    const total = +res.headers.get('Content-Length') || 0;
+    if(!res.body || !total){
+      const text = await res.text();
+      onProgress(100);
+      return text;
+    }
+    const reader = res.body.getReader();
+    let received = 0;
+    const chunks = [];
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      chunks.push(value);
+      received += value.length;
+      onProgress(Math.round((received/total)*100));
+    }
+    const blob = new Blob(chunks);
+    return await blob.text();
+  }
+
+  function execScript(code){
+    const s = document.createElement('script');
+    s.textContent = code;
+    document.head.appendChild(s);
   }
 
   function loadScriptOnce(url){
     return new Promise((resolve, reject)=>{
-      const s = document.createElement('script');
-      s.src = url;
-      s.onload = ()=>resolve();
-      s.onerror = ()=>{ s.remove(); reject(new Error('échec: '+url)); };
-      document.head.appendChild(s);
+      const timer = setTimeout(()=>reject(new Error(`Timeout (8s) sur ${url}`)), 8000);
+      fetchScriptWithProgress(url, (pct)=>{
+        setEnginePill('loading', `Téléchargement du script IA... ${pct}%`);
+        setEngineProgress(pct * 0.35); // le script = ~35% de la progression totale affichée
+      }).then((code)=>{
+        clearTimeout(timer);
+        try{ execScript(code); resolve(); }
+        catch(e){ reject(new Error(`Erreur d'exécution du script : ${e.message}`)); }
+      }).catch((e)=>{
+        clearTimeout(timer);
+        reject(new Error(`Échec réseau/bloqué : ${url} (${e.message})`));
+      });
     });
   }
 
   async function loadMediapipeWithFallback(){
-    setEnginePill('loading', 'Chargement du moteur IA...');
+    setEnginePill('loading', 'Chargement du moteur IA... 0%');
+    setEngineProgress(0);
+    const errors = [];
     for(const base of CDN_BASES){
       try{
         await loadScriptOnce(base + 'selfie_segmentation.js');
         if(typeof SelfieSegmentation !== 'undefined'){
           mediapipeBase = base;
-          return true;
+          return {ok:true};
         }
+        errors.push(`Script chargé mais SelfieSegmentation absent (${base})`);
       }catch(e){
+        errors.push(e.message);
         console.warn(e.message);
       }
     }
-    return false;
+    return {ok:false, detail:errors.join(' | ')};
+  }
+
+  // Le téléchargement interne du wasm + du modèle .tflite par MediaPipe
+  // ne permet pas de suivre les octets réels (fetch interne à la lib).
+  // On affiche donc une progression estimée qui ralentit à l'approche de 95%,
+  // et on saute à 100% dès que initialize() est réellement terminé.
+  function startEstimatedProgress(fromPct, toPct, durationMs){
+    let stopped = false;
+    const start = performance.now();
+    function tick(now){
+      if(stopped) return;
+      const t = Math.min(1, (now-start)/durationMs);
+      const eased = 1 - Math.pow(1-t, 3); // approche douce, ne touche jamais 100%
+      const pct = Math.round(fromPct + (toPct-fromPct)*eased);
+      setEngineProgress(pct);
+      engineText.textContent = `Téléchargement du modèle IA... ${pct}%`;
+      if(t<1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    return ()=>{ stopped = true; };
   }
 
   async function warmUpMediapipe(){
     segmenter = null; // on repart d'un segmenteur propre à chaque tentative
-    const scriptOk = await loadMediapipeWithFallback();
-    if(!scriptOk){
+    const result = await loadMediapipeWithFallback();
+    if(!result.ok){
       mediapipeState = 'error';
-      setEnginePill('error', "Moteur IA bloqué. Vérifie ta connexion ou désactive le bloqueur de scripts, puis touche ici.");
+      setEnginePill('error', "Moteur IA bloqué. Touche ici pour réessayer.", result.detail);
+      setEngineProgress(0, false);
       return;
     }
+    let stopEstimate = null;
     try{
-      setEnginePill('loading', 'Téléchargement du modèle IA...');
+      setEnginePill('loading', 'Téléchargement du modèle IA... 35%');
+      setEngineProgress(35);
       const seg = getSegmenter();
       if(typeof seg.initialize === 'function'){
+        stopEstimate = startEstimatedProgress(35, 96, 5000);
         await seg.initialize(); // télécharge le wasm + le modèle
+        stopEstimate();
       }
       mediapipeState = 'ready';
-      setEnginePill('ready', 'Moteur IA prêt');
-      setTimeout(()=>{ enginePill.style.opacity='0'; }, 2200);
+      setEngineProgress(100);
+      setEnginePill('ready', `Moteur IA prêt · 100%`);
+      setTimeout(()=>{ enginePill.style.opacity='0'; engineDetail.classList.remove('show'); setEngineProgress(0,false); }, 2200);
     }catch(err){
+      if(stopEstimate) stopEstimate();
       console.error(err);
       mediapipeState = 'error';
-      setEnginePill('error', "Modèle IA indisponible. Touche ici pour réessayer.");
+      setEnginePill('error', "Modèle IA indisponible. Touche ici pour réessayer.", String(err && err.message || err));
+      setEngineProgress(0, false);
     }
   }
 
