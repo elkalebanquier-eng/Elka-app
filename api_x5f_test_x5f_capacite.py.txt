@@ -1,0 +1,114 @@
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+import torch, json, torch.nn as nn, time, os
+import torch.nn.functional as F
+
+class OneDevAIV3(nn.Module):
+    def __init__(self, vocab_size, bloc=64, embedding_dim=128, heads=8, layers=4):
+        super().__init__()
+        self.bloc = bloc
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.position = nn.Embedding(bloc, embedding_dim)
+        couche = nn.TransformerEncoderLayer(d_model=embedding_dim, nhead=heads, dim_feedforward=256, dropout=0.1, batch_first=True, activation="gelu")
+        self.transformer = nn.TransformerEncoder(couche, num_layers=layers)
+        self.norm = nn.LayerNorm(embedding_dim)
+        self.sortie = nn.Linear(embedding_dim, vocab_size)
+    def forward(self, x):
+        b,l = x.shape
+        pos = torch.arange(l, device=x.device).unsqueeze(0)
+        x = self.embedding(x) + self.position(pos)
+        masque = torch.triu(torch.ones(l, l, device=x.device), diagonal=1).bool()
+        x = self.transformer(x, mask=masque)
+        x = self.norm(x)
+        return self.sortie(x)
+
+app = FastAPI(title="ONE DEV AI - Test Capacité")
+
+print("Chargement TON IA pour test...")
+with open("vocab.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
+    char_to_id = data["char_to_id"]
+    id_to_char = {int(k):v for k,v in data["id_to_char"].items()}
+    vocab_size = len(data["vocab"])
+    bloc = data["bloc"]
+    config = data.get("config", {})
+
+device = torch.device("cpu")
+modele = OneDevAIV3(vocab_size=vocab_size, bloc=bloc)
+modele.load_state_dict(torch.load("one_dev_ai_v3_best.pt", map_location=device))
+modele.eval()
+
+params = sum(p.numel() for p in modele.parameters())
+taille_fichier = os.path.getsize("one_dev_ai_v3_best.pt") / (1024*1024)
+
+def generer_test(depart, longueur=120, temperature=0.7):
+    start = time.time()
+    depart = depart.lower()
+    ids = [char_to_id.get(c, char_to_id.get("<unk>",0)) for c in depart]
+    if not ids:
+        return {"reponse":"vide","latence":0,"tokens":0}
+    for _ in range(longueur):
+        ctx = ids[-bloc:]
+        x = torch.tensor([ctx], dtype=torch.long)
+        with torch.no_grad():
+            logits = modele(x)[0, -1] / temperature
+            probs = F.softmax(logits, dim=-1)
+            prochain = torch.multinomial(probs, 1).item()
+        ids.append(prochain)
+        if id_to_char.get(prochain) in ["<eos>","\n"]:
+            break
+    texte = "".join(id_to_char.get(i,"") for i in ids)
+    reponse = texte[len(depart):].replace("<pad>","").replace("<bos>","").replace("<eos>","").replace("<unk>","").strip()
+    latence = time.time() - start
+    return {"reponse": reponse, "latence": round(latence,3), "tokens": len(ids), "vitesse": round(len(ids)/latence,1) if latence>0 else 0}
+
+class Q(BaseModel):
+    question: str
+
+@app.get("/")
+def home():
+    if os.path.exists("index_test_capacity.html"):
+        return FileResponse("index_test_capacity.html")
+    return {"status":"Test Capacité TON IA"}
+
+@app.get("/api/info")
+def info():
+    return {
+        "modele": "ONE DEV AI V3 - TON IA",
+        "vocabulaire": vocab_size,
+        "parametres": params,
+        "taille_Mo": round(taille_fichier,2),
+        "contexte_bloc": bloc,
+        "config": config,
+        "fichiers": ["one_dev_ai_v3_best.pt","vocab.json"],
+        "type": "100% TON IA, pas Hugging Face"
+    }
+
+@app.get("/api/capacite")
+def capacite():
+    tests = [
+        "bonjour",
+        "explique moi une boucle python",
+        "corrige: nameerror: name 'x' is not defined",
+        "comment semer le mil a boromo",
+        "ecris une fonction python qui additionne deux nombres",
+        "c'est quoi pytorch",
+        "def ma_fonction():",
+        "quelle est la capitale du burkina"
+    ]
+    resultats = []
+    for t in tests:
+        r = generer_test(t, longueur=80)
+        resultats.append({"test": t, **r})
+    return {"tests": resultats, "info": {"parametres": params, "vocab": vocab_size}}
+
+@app.get("/api/chat")
+def chat(question: str):
+    r = generer_test(question, longueur=150)
+    return {"question": question, **r, "modele": "TON IA"}
+
+@app.post("/api/chat")
+def chat_post(q: Q):
+    r = generer_test(q.question, longueur=150)
+    return {"question": q.question, **r, "modele": "TON IA"}
